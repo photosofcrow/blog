@@ -145,6 +145,93 @@ header h1{font-family:Orbitron;font-size:clamp(1rem, 2vw + .5rem, 1.5rem);color:
 .center-button:focus-visible{
   transform:translate(-50%,-50%) scale(1.1);
 }
+    
+/* Paleta naturaleza */
+:root{
+  --green-forest:#0b3d2e;
+  --green-moss:#2e7d32;
+  --green-neon:#00ff88;
+  --brown-earth:#5d4037;
+  --black-deep:#000915;
+  --cream:#f5f5f5;
+  --bg:var(--black-deep);
+  --text:#fff;
+  --accent:var(--green-neon);
+}
+@media (prefers-color-scheme:light){
+  --bg:var(--cream);
+  --text:#000;
+  --accent:var(--green-moss);
+}
+
+*{margin:0;padding:0;box-sizing:border-box}
+body{
+  font-family:'Arima Madurai',cursive;
+  background:var(--bg) center/cover no-repeat;
+  color:var(--text);
+  transition:.3s background-color;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+  align-items:center;
+  justify-content:center;
+}
+
+/* --- carrusel cuervos --- */
+.container{
+  position:relative;
+  width:100%;
+  max-width:1200px;
+  height:clamp(240px, 35vh, 500px);
+  overflow:hidden;
+  background-image:
+    linear-gradient(to bottom, rgba(0,0,0,.45), rgba(0,0,0,.75)),
+    url('https://images.unsplash.com/photo-1446824505046-e43605ffb17f?auto=format&fit=crop&w=1200&q=80');
+  background-size:cover;
+  background-position:center;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+}
+.container h1{
+  font-size:clamp(1.4rem, 2.5vw + .5rem, 3rem);
+  text-align:center;
+  letter-spacing:-1px;
+  text-shadow:0 1px 4px rgba(0,0,0,.6);
+  z-index:3;
+  max-width:90%;
+}
+
+/* cuervo animado */
+.cuervo{
+  position:absolute;
+  top:20%;
+  left:-120px;
+  width:clamp(70px, 10vmin, 100px);
+  aspect-ratio:88/125;
+  background:url('https://s3-us-west-2.amazonaws.com/s.cdpn.io/174479/bird-cells-new.svg') 0 0 / auto 100%;
+  animation:fly-cycle .8s steps(10) infinite, fly-ltr 20s linear infinite;
+  will-change:transform,background-position;
+}
+/* retrasos para 6 cuervos */
+.cuervo:nth-child(1){animation-delay:0s,0s;}
+.cuervo:nth-child(2){animation-delay:-.3s,3.3s;}
+.cuervo:nth-child(3){animation-delay:-.6s,6.6s;}
+.cuervo:nth-child(4){animation-delay:-.9s,9.9s;}
+.cuervo:nth-child(5){animation-delay:-1.2s,12.2s;}
+.cuervo:nth-child(6){animation-delay:-1.5s,15.5s;}
+
+@keyframes fly-cycle{
+  100%{background-position:-880px 0;}
+}
+@keyframes fly-ltr{
+  0%{transform:translateX(-120px) translateY(0) scale(.35);}
+  20%{transform:translateX(20vw) translateY(2vh) scale(.45);}
+  40%{transform:translateX(40vw) translateY(-1vh) scale(.5);}
+  60%{transform:translateX(60vw) translateY(3vh) scale(.55);}
+  80%{transform:translateX(80vw) translateY(0) scale(.5);}
+  100%{transform:translateX(calc(100vw + 120px)) translateY(1vh) scale(.45);}
+}
 
 /* responsive helpers */
 @media (max-width: 480px){
@@ -152,6 +239,7 @@ header h1{font-family:Orbitron;font-size:clamp(1rem, 2vw + .5rem, 1.5rem);color:
   #hamburger{width:28px;height:28px}
 }
     /* ------------------------Final del menu--------------------------------------------*/
+    
 </style>
 </head>
 <body>
@@ -163,7 +251,7 @@ header h1{font-family:Orbitron;font-size:clamp(1rem, 2vw + .5rem, 1.5rem);color:
   </button>
 </header>
 
-<!-- wheel overlay -->
+<!-- Menu -->
 <div id="wheelWrapper" aria-hidden="true">
   <div class="core-menu" role="menu" aria-label="Menú principal">
     <button class="center-button" onclick="closeWheel()" aria-label="Cerrar menú">Cerrar</button>
@@ -175,6 +263,23 @@ header h1{font-family:Orbitron;font-size:clamp(1rem, 2vw + .5rem, 1.5rem);color:
     <a class="menu-button" role="menuitem" href="social.html"    data-bg="https://images.unsplash.com/photo-1611162616475-46b635cb6868?auto=format&fit=crop&w=1200&q=80">🔮 Redes Sociales</a>
     <a class="menu-button" role="menuitem" href="sobremi.html"   data-bg="https://images.unsplash.com/photo-1487412912498-0447578fcca8?auto=format&fit=crop&w=1200&q=80">🌐 Sobre mí</a>
   </div>
+  
+<!-- Final del menu -->
+  
+<!-- Carrusel principal-->
+  <div class="container">
+  <h1>Bienvenidos al blog de un cuervo<br>donde nos fijamos en los pequeños detalles de la naturaleza</h1>
+
+  <div class="cuervo"></div>
+  <div class="cuervo"></div>
+  <div class="cuervo"></div>
+  <div class="cuervo"></div>
+  <div class="cuervo"></div>
+  <div class="cuervo"></div>
+</div>
+
+
+<!-- Final del carrusel -->
 </div>
 
 <script>
