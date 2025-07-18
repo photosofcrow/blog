@@ -1,0 +1,227 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1" />
+<title>Cuervo Photography</title>
+<style>
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Orbitron:wght@500&display=swap');
+:root{
+  --green-forest:#0b3d2e;
+  --green-moss:#2e7d32;
+  --green-neon:#00ff88;
+  --brown-earth:#5d4037;
+  --black-deep:#000915;
+  --cream:#f5f5f5;
+
+  --bg:var(--black-deep);
+  --text:#fff;
+  --accent:var(--green-neon);
+}
+@media (prefers-color-scheme:light){
+  --bg:var(--cream);
+  --text:#000;
+  --accent:var(--green-moss);
+}
+
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{
+  font-family:Inter,system-ui;
+  background:var(--bg) center/cover no-repeat;
+  color:var(--text);
+  transition:.3s background-image;
+  min-height:100vh;
+  display:flex;
+  flex-direction:column;
+}
+header{
+  position:fixed;
+  inset:0 0 auto;
+  display:flex;
+  justify-content:space-between;
+  align-items:center;
+  padding:.75rem 1rem;
+  background:var(--bg);
+  border-bottom:2px solid var(--accent);
+  z-index:30;
+}
+header h1{font-family:Orbitron;font-size:clamp(1rem, 2vw + .5rem, 1.5rem);color:var(--accent)}
+#hamburger{
+  width:clamp(26px, 6vw, 34px);
+  height:clamp(26px, 6vw, 34px);
+  cursor:pointer;
+  display:flex;
+  flex-direction:column;
+  justify-content:space-around;
+  background:none;
+  border:none;
+}
+#hamburger span{
+  height:3px;
+  width:100%;
+  background:var(--accent);
+  transition:.3s;
+}
+#hamburger.open span:nth-child(1){transform:translateY(8px) rotate(45deg)}
+#hamburger.open span:nth-child(2){opacity:0}
+#hamburger.open span:nth-child(3){transform:translateY(-8px) rotate(-45deg)}
+
+/* --- wheel overlay --- */
+#wheelWrapper{
+  position:fixed;
+  inset:0;
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  background:rgba(0,0,0,.75);
+  backdrop-filter:blur(6px);
+  z-index:20;
+  opacity:0;
+  pointer-events:none;
+  transition:opacity .4s;
+}
+#wheelWrapper.show{opacity:1;pointer-events:auto}
+
+.core-menu{
+  position:relative;
+  width:clamp(280px, 70vmin, 480px);
+  height:clamp(280px, 70vmin, 480px);
+  border-radius:50%;
+  background:radial-gradient(circle, var(--green-forest) 0%, transparent 70%);
+  box-shadow:
+    inset 0 0 20px var(--accent),
+    0 0 40px var(--accent);
+  animation:pulse 4s ease-in-out infinite;
+}
+@keyframes pulse{
+  0%,100%{box-shadow:inset 0 0 20px var(--accent), 0 0 40px var(--accent);}
+  50%{box-shadow:inset 0 0 30px var(--green-neon), 0 0 60px var(--green-neon);}
+}
+
+.menu-button{
+  position:absolute;
+  width:clamp(40px, 14vmin, 70px);
+  height:clamp(40px, 14vmin, 70px);
+  border-radius:50%;
+  background:var(--bg);
+  color:var(--accent);
+  border:2px solid var(--accent);
+  font-size:clamp(.6rem, 2.5vmin, .9rem);
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  text-decoration:none;
+  transition:transform .25s, box-shadow .25s, background .25s, color .25s;
+  box-shadow:0 0 8px var(--accent);
+}
+.menu-button:hover,
+.menu-button:focus-visible{
+  transform:scale(1.15);
+  background:var(--green-moss);
+  color:#fff;
+  box-shadow:0 0 20px var(--green-neon);
+}
+.center-button{
+  position:absolute;
+  left:50%;top:50%;
+  transform:translate(-50%,-50%);
+  width:clamp(50px, 18vmin, 85px);
+  height:clamp(50px, 18vmin, 85px);
+  border:none;
+  border-radius:50%;
+  background:var(--accent);
+  color:var(--bg);
+  font-family:Orbitron;
+  font-weight:700;
+  font-size:clamp(.7rem, 3vmin, 1rem);
+  cursor:pointer;
+  box-shadow:0 0 20px var(--accent);
+  transition:transform .2s;
+}
+.center-button:hover,
+.center-button:focus-visible{
+  transform:translate(-50%,-50%) scale(1.1);
+}
+
+/* responsive helpers */
+@media (max-width: 480px){
+  header{padding:.5rem .75rem}
+  #hamburger{width:28px;height:28px}
+}
+</style>
+</head>
+<body>
+
+<header>
+  <h1>Cuervo Photography</h1>
+  <button id="hamburger" aria-label="Abrir menú" aria-controls="wheelWrapper" aria-expanded="false">
+    <span></span><span></span><span></span>
+  </button>
+</header>
+
+<!-- wheel overlay -->
+<div id="wheelWrapper" aria-hidden="true">
+  <div class="core-menu" role="menu" aria-label="Menú principal">
+    <button class="center-button" onclick="closeWheel()" aria-label="Cerrar menú">Cerrar</button>
+
+    <a class="menu-button" role="menuitem" href="plantas.html"   data-bg="https://images.unsplash.com/photo-1520412099551-62b6bafeb5bb?auto=format&fit=crop&w=1200&q=80">🌱 Plantas</a>
+    <a class="menu-button" role="menuitem" href="animales.html"  data-bg="https://images.unsplash.com/photo-1549480017-d76466a4b7e8?auto=format&fit=crop&w=1200&q=80">💡 Animales</a>
+    <a class="menu-button" role="menuitem" href="naturaleza.html" data-bg="https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1200&q=80">📡 Naturaleza</a>
+    <a class="menu-button" role="menuitem" href="curiosidades.html" data-bg="https://images.unsplash.com/photo-1494253109108-2e30c049369b?auto=format&fit=crop&w=1200&q=80">🧠 Curiosidades</a>
+    <a class="menu-button" role="menuitem" href="social.html"    data-bg="https://images.unsplash.com/photo-1611162616475-46b635cb6868?auto=format&fit=crop&w=1200&q=80">🔮 Redes Sociales</a>
+    <a class="menu-button" role="menuitem" href="sobremi.html"   data-bg="https://images.unsplash.com/photo-1487412912498-0447578fcca8?auto=format&fit=crop&w=1200&q=80">🌐 Sobre mí</a>
+  </div>
+</div>
+
+<script>
+/* posicionar botones de la rueda (responsive) */
+const wheel  = document.querySelector('.core-menu');
+const btns   = wheel.querySelectorAll('.menu-button');
+const radius = .34; // 34 % del tamaño del círculo
+btns.forEach((b,i)=>{
+  const ang = (i/btns.length)*2*Math.PI - Math.PI/2;
+  const x = Math.cos(ang) * radius * 100; // %
+  const y = Math.sin(ang) * radius * 100; // %
+  const size = getComputedStyle(b).width;
+  b.style.left = `calc(50% + ${x}% - ${size}/2)`;
+  b.style.top  = `calc(50% + ${y}% - ${size}/2)`;
+});
+
+/* toggle wheel */
+const ham  = document.getElementById('hamburger');
+const wrap = document.getElementById('wheelWrapper');
+function openWheel(){
+  wrap.classList.add('show');
+  wrap.setAttribute('aria-hidden','false');
+  ham.classList.add('open');
+  ham.setAttribute('aria-expanded','true');
+}
+function closeWheel(){
+  wrap.classList.remove('show');
+  wrap.setAttribute('aria-hidden','true');
+  ham.classList.remove('open');
+  ham.setAttribute('aria-expanded','false');
+}
+ham.addEventListener('click',()=> wrap.classList.contains('show')?closeWheel():openWheel());
+
+/* click fuera del círculo cierra el menú */
+wrap.addEventListener('click',(e)=>{
+  if(e.target === wrap) closeWheel();
+});
+
+/* Escape cierra el menú */
+document.addEventListener('keydown',(e)=>{
+  if(e.key==='Escape' && wrap.classList.contains('show')) closeWheel();
+});
+
+/* cambiar fondo al pasar el ratón / enfocar */
+btns.forEach(btn=>{
+  const bg = btn.dataset.bg;
+  btn.addEventListener('mouseenter',()=> document.body.style.backgroundImage = `url('${bg}')`);
+  btn.addEventListener('focus',     ()=> document.body.style.backgroundImage = `url('${bg}')`);
+  btn.addEventListener('mouseleave',()=> document.body.style.backgroundImage = '');
+  btn.addEventListener('blur',      ()=> document.body.style.backgroundImage = '');
+});
+</script>
+</body>
+</html>
