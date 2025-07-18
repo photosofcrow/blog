@@ -1,336 +1,492 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-<meta charset="utf-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1" />
-<title>Cuervo Photography</title>
-<link rel="stylesheet" href="https://photosofcrow.github.io/blog/styles.css" />
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Cuervo Photography</title>
+
+  <!-- Fuentes -->
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Orbitron:wght@500&display=swap" rel="stylesheet">
+
+  <!-- Paleta -->
   <style>
-  
-/* Estilos menu*/
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@400;700&family=Orbitron:wght@500&display=swap');
-:root{
-  --green-forest:#0b3d2e;
-  --green-moss:#2e7d32;
-  --green-neon:#00ff88;
-  --brown-earth:#5d4037;
-  --black-deep:#000915;
-  --cream:#f5f5f5;
+    :root{
+      --green-forest:#0b3d2e;
+      --green-moss:#2e7d32;
+      --green-neon:#00ff88;
+      --brown-earth:#5d4037;
+      --black-deep:#000915;
+      --cream:#f5f5f5;
 
-  --bg:var(--black-deep);
-  --text:#fff;
-  --accent:var(--green-neon);
-}
-@media (prefers-color-scheme:light){
-  --bg:var(--cream);
-  --text:#000;
-  --accent:var(--green-moss);
+      --bg:var(--black-deep);
+      --text:#fff;
+      --accent:var(--green-neon);
+      --font-body:'Inter',system-ui;
+      --font-title:'Orbitron',monospace;
+    }
+
+    @media (prefers-color-scheme:light){
+      :root{
+        --bg:var(--cream);
+        --text:#000;
+        --accent:var(--green-moss);
+      }
+    }
+
+    /* Reset & base */
+    *,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+    html{scroll-behavior:smooth}
+    body{
+      font-family:var(--font-body);
+      background:var(--bg) center/cover no-repeat fixed;
+      color:var(--text);
+      transition:.4s background-color;
+      min-height:100vh;
+      display:flex;
+      flex-direction:column;
+    }
+    img{max-width:100%;display:block}
+
+    /* Header */
+    header{
+      position:sticky;
+      top:0;
+      display:flex;
+      justify-content:space-between;
+      align-items:center;
+      padding:.75rem 1.25rem;
+      background:rgba(0,9,21,.85);
+      backdrop-filter:blur(6px);
+      border-bottom:2px solid var(--accent);
+      z-index:20;
+    }
+    header h1{
+      font-family:var(--font-title);
+      font-size:clamp(1.1rem, 2vw + .6rem, 1.6rem);
+      color:var(--accent);
+      letter-spacing:.5px;
+    }
+
+    /* Hamburger */
+    #hamburger{
+      width:30px;height:30px;cursor:pointer;background:none;border:none;display:flex;flex-direction:column;justify-content:space-around}
+    #hamburger span{height:3px;width:100%;background:var(--accent);transition:.3s}
+    #hamburger.open span:nth-child(1){transform:translateY(9px) rotate(45deg)}
+    #hamburger.open span:nth-child(2){opacity:0}
+    #hamburger.open span:nth-child(3){transform:translateY(-9px) rotate(-45deg)}
+
+    /* Wheel overlay */
+    #wheelWrapper{
+      position:fixed;inset:0;
+      display:flex;align-items:center;justify-content:center;
+      background:rgba(0,0,0,.8);backdrop-filter:blur(8px);
+      z-index:10;opacity:0;pointer-events:none;transition:opacity .4s;
+    }
+    #wheelWrapper.show{opacity:1;pointer-events:auto}
+    .core-menu{
+      position:relative;
+      width:clamp(280px, 65vmin, 480px);
+      height:clamp(280px, 65vmin, 480px);
+      border-radius:50%;
+      background:radial-gradient(circle, var(--green-forest) 0%, transparent 70%);
+      box-shadow:0 0 50px var(--accent),inset 0 0 30px var(--accent);
+      animation:pulse 5s ease-in-out infinite;
+    }
+    @keyframes pulse{
+      0%,100%{box-shadow:0 0 50px var(--accent),inset 0 0 30px var(--accent);}
+      50%{box-shadow:0 0 80px var(--green-neon),inset 0 0 50px var(--green-neon);}
+    }
+    .menu-button{
+      position:absolute;
+      width:clamp(50px, 13vmin, 75px);
+      height:clamp(50px, 13vmin, 75px);
+      border-radius:50%;
+      background:var(--bg);
+      color:var(--accent);
+      border:2px solid var(--accent);
+      font-size:.8rem;
+      font-weight:700;
+      display:flex;align-items:center;justify-content:center;
+      text-decoration:none;
+      transition:transform .25s, background .25s, color .25s, box-shadow .25s;
+      box-shadow:0 0 10px var(--accent);
+    }
+    .menu-button:hover{
+      transform:scale(1.15);
+      background:var(--green-moss);
+      color:#fff;
+      box-shadow:0 0 25px var(--green-neon);
+    }
+    .center-button{
+      position:absolute;
+      left:50%;top:50%;
+      transform:translate(-50%,-50%);
+      width:clamp(60px, 18vmin, 90px);
+      height:clamp(60px, 18vmin, 90px);
+      border:none;
+      border-radius:50%;
+      background:var(--accent);
+      color:var(--bg);
+      font-family:var(--font-title);
+      font-weight:700;
+      font-size:clamp(.7rem, 3vmin, 1rem);
+      cursor:pointer;
+      box-shadow:0 0 20px var(--accent);
+      transition:transform .2s;
+    }
+    .center-button:hover{transform:translate(-50%,-50%) scale(1.1)}
+
+    /* Hero */
+    .hero{
+      position:relative;
+      margin:4rem auto 3rem;
+      max-width:1200px;
+      width:90%;
+      height:clamp(260px, 45vh, 520px);
+      border-radius:16px;
+      overflow:hidden;
+      box-shadow:0 12px 40px rgba(0,0,0,.6);
+    }
+    .hero-track{
+      display:flex;
+      width:300%;
+      height:100%;
+      transition:transform .7s ease;
+    }
+    .hero-slide{
+      width:33.333%;
+      height:100%;
+      background-size:cover;
+      background-position:center;
+      position:relative;
+      display:flex;align-items:center;justify-content:center;
+    }
+    .hero-slide::before{
+      content:'';
+      position:absolute;inset:0;
+      background:rgba(0,0,0,.55);
+    }
+    .hero-slide h2{
+      position:relative;
+      font-size:clamp(1.5rem, 3vw + .5rem, 2.6rem);
+      text-align:center;
+      text-shadow:0 2px 8px rgba(0,0,0,.8);
+      padding:0 1rem;
+      max-width:50ch;
+    }
+    .hero-nav{
+      position:absolute;bottom:1rem;left:50%;transform:translateX(-50%);
+      display:flex;gap:.75rem;
+    }
+    .hero-dot{
+      width:14px;height:14px;border-radius:50%;background:var(--accent);
+      opacity:.4;cursor:pointer;transition:opacity .3s;
+    }
+    .hero-dot.active{opacity:1}
+    .hero-arrow{
+      position:absolute;top:50%;transform:translateY(-50%);
+      background:rgba(0,0,0,.45);color:var(--accent);border:none;
+      font-size:2.2rem;padding:.4rem .8rem;cursor:pointer;
+      border-radius:4px;user-select:none;z-index:3;
+    }
+    .hero-arrow.left{left:.75rem}
+    .hero-arrow.right{right:.75rem}
+
+    /* Crows */
+    .cuervo{
+      position:absolute;
+      top:18%;left:-120px;
+      width:clamp(80px, 12vmin, 110px);
+      aspect-ratio:88/125;
+      background:url('https://s3-us-west-2.amazonaws.com/s.cdpn.io/174479/bird-cells-new.svg') 0 0/auto 100%;
+      animation:fly-cycle .8s steps(10) infinite, fly-ltr 22s linear infinite;
+      pointer-events:none;
+    }
+    .cuervo:nth-child(1){animation-delay:0s,0s}
+    .cuervo:nth-child(2){animation-delay:-.3s,3.3s}
+    .cuervo:nth-child(3){animation-delay:-.6s,6.6s}
+    .cuervo:nth-child(4){animation-delay:-.9s,9.9s}
+    @keyframes fly-cycle{100%{background-position:-880px 0}}
+    @keyframes fly-ltr{
+      0%{transform:translateX(-120px) translateY(0) scale(.3)}
+      20%{transform:translateX(20vw) translateY(2vh) scale(.4)}
+      40%{transform:translateX(40vw) translateY(-1vh) scale(.45)}
+      60%{transform:translateX(60vw) translateY(3vh) scale(.5)}
+      80%{transform:translateX(80vw) translateY(0) scale(.45)}
+      100%{transform:translateX(calc(100vw + 120px)) translateY(1vh) scale(.4)}
+    }
+
+    /* Main */
+    main{
+      flex:1;
+      padding:2rem 1rem 4rem;
+      max-width:1200px;
+      margin:auto;
+      display:flex;
+      flex-direction:column;
+      gap:3rem;
+    }
+    .section-title{
+      font-family:var(--font-title);
+      font-size:clamp(1.6rem, 4vw, 2.4rem);
+      color:var(--accent);
+      text-align:center;
+      margin-bottom:1.5rem;
+    }
+
+    /* Cards grid */
+    .grid{
+      display:grid;
+      gap:2rem;
+      grid-template-columns:repeat(auto-fill,minmax(260px,1fr));
+    }
+    .card{
+      background:rgba(255,255,255,.06);
+      border:1px solid rgba(0,255,136,.2);
+      border-radius:12px;
+      overflow:hidden;
+      display:flex;
+      flex-direction:column;
+      transition:transform .25s, box-shadow .25s;
+    }
+    .card:hover{
+      transform:translateY(-6px);
+      box-shadow:0 0 25px rgba(0,255,136,.35);
+    }
+    .card img{width:100%;height:180px;object-fit:cover}
+    .card-body{padding:1rem 1.25rem 1.5rem;flex:1;display:flex;flex-direction:column;gap:.75rem}
+    .card h3{font-size:1.2rem;color:var(--accent)}
+    .card p{font-size:.9rem;line-height:1.45;flex:1}
+    .card a{
+      align-self:flex-start;
+      color:var(--accent);
+      font-weight:700;
+      font-size:.85rem;
+      border-bottom:2px solid var(--accent);
+      text-decoration:none;
+      padding-bottom:2px;
+    }
+
+    /* Footer */
+    footer{
+      background:var(--black-deep);
+      color:var(--text);
+      text-align:center;
+      padding:2rem 1rem 3rem;
+      border-top:2px solid var(--accent);
+    }
+    footer h1{font-family:var(--font-title);font-size:1.4rem;margin-bottom:.5rem}
+    footer a{color:var(--accent);text-decoration:none}
+    footer a:hover{text-decoration:underline}
+
+    /* Responsive */
+    @media (max-width:480px){
+      header{padding:.5rem .75rem}
+    }
+    @media (min-width: 768px) {
+  /* Contenedor horizontal scrolleable */
+  .grid {
+    display: flex;
+    gap: 2rem;
+    overflow-x: auto;
+    scroll-snap-type: x mandatory;
+    padding-bottom: .5rem; /* barrita de scroll */
+  }
+  .grid::-webkit-scrollbar { height: 8px; }
+  .grid::-webkit-scrollbar-thumb {
+    background: var(--accent);
+    border-radius: 4px;
+  }
+
+  /* Cada tarjeta fija su ancho */
+  .grid > .card {
+    flex: 0 0 320px;        /* 320 px fijos */
+    scroll-snap-align: start;
+  }
 }
 
-*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
-body{
-  font-family:Inter,system-ui;
-  background:var(--bg) center/cover no-repeat;
-  color:var(--text);
-  transition:.3s background-image;
-  min-height:100vh;
-  display:flex;
-  flex-direction:column;
-}
-header{
-  position:fixed;
-  inset:0 0 auto;
-  display:flex;
-  justify-content:space-between;
-  align-items:center;
-  padding:.75rem 1rem;
-  background:var(--bg);
-  border-bottom:2px solid var(--accent);
-  z-index:30;
-}
-header h1{font-family:Orbitron;font-size:clamp(1rem, 2vw + .5rem, 1.5rem);color:var(--accent)}
-#hamburger{
-  width:clamp(26px, 6vw, 34px);
-  height:clamp(26px, 6vw, 34px);
-  cursor:pointer;
-  display:flex;
-  flex-direction:column;
-  justify-content:space-around;
-  background:none;
-  border:none;
-}
-#hamburger span{
-  height:3px;
-  width:100%;
-  background:var(--accent);
-  transition:.3s;
-}
-#hamburger.open span:nth-child(1){transform:translateY(8px) rotate(45deg)}
-#hamburger.open span:nth-child(2){opacity:0}
-#hamburger.open span:nth-child(3){transform:translateY(-8px) rotate(-45deg)}
-
-/* --- wheel overlay --- */
-#wheelWrapper{
-  position:fixed;
-  inset:0;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  background:rgba(0,0,0,.75);
-  backdrop-filter:blur(6px);
-  z-index:20;
-  opacity:0;
-  pointer-events:none;
-  transition:opacity .4s;
-}
-#wheelWrapper.show{opacity:1;pointer-events:auto}
-
-.core-menu{
-  position:relative;
-  width:clamp(280px, 70vmin, 480px);
-  height:clamp(280px, 70vmin, 480px);
-  border-radius:50%;
-  background:radial-gradient(circle, var(--green-forest) 0%, transparent 70%);
-  box-shadow:
-    inset 0 0 20px var(--accent),
-    0 0 40px var(--accent);
-  animation:pulse 4s ease-in-out infinite;
-}
-@keyframes pulse{
-  0%,100%{box-shadow:inset 0 0 20px var(--accent), 0 0 40px var(--accent);}
-  50%{box-shadow:inset 0 0 30px var(--green-neon), 0 0 60px var(--green-neon);}
-}
-
-.menu-button{
-  position:absolute;
-  width:clamp(40px, 14vmin, 70px);
-  height:clamp(40px, 14vmin, 70px);
-  border-radius:50%;
-  background:var(--bg);
-  color:var(--accent);
-  border:2px solid var(--accent);
-  font-size:clamp(.6rem, 2.5vmin, .9rem);
-  display:flex;
-  align-items:center;
-  justify-content:center;
-  text-decoration:none;
-  transition:transform .25s, box-shadow .25s, background .25s, color .25s;
-  box-shadow:0 0 8px var(--accent);
-}
-.menu-button:hover,
-.menu-button:focus-visible{
-  transform:scale(1.15);
-  background:var(--green-moss);
-  color:#fff;
-  box-shadow:0 0 20px var(--green-neon);
-}
-.center-button{
-  position:absolute;
-  left:50%;top:50%;
-  transform:translate(-50%,-50%);
-  width:clamp(50px, 18vmin, 85px);
-  height:clamp(50px, 18vmin, 85px);
-  border:none;
-  border-radius:50%;
-  background:var(--accent);
-  color:var(--bg);
-  font-family:Orbitron;
-  font-weight:700;
-  font-size:clamp(.7rem, 3vmin, 1rem);
-  cursor:pointer;
-  box-shadow:0 0 20px var(--accent);
-  transition:transform .2s;
-}
-.center-button:hover,
-.center-button:focus-visible{
-  transform:translate(-50%,-50%) scale(1.1);
-}
-    
-/* Paleta naturaleza */
-:root{
-  --green-forest:#0b3d2e;
-  --green-moss:#2e7d32;
-  --green-neon:#00ff88;
-  --brown-earth:#5d4037;
-  --black-deep:#000915;
-  --cream:#f5f5f5;
-  --bg:var(--black-deep);
-  --text:#fff;
-  --accent:var(--green-neon);
-}
-@media (prefers-color-scheme:light){
-  --bg:var(--cream);
-  --text:#000;
-  --accent:var(--green-moss);
-}
-
-*{margin:0;padding:0;box-sizing:border-box}
-body{
-  font-family:'Arima Madurai',cursive;
-  background:var(--bg) center/cover no-repeat;
-  color:var(--text);
-  transition:.3s background-color;
-  min-height:100vh;
-  display:flex;
-  flex-direction:column;
-  align-items:center;
-  justify-content:center;
-}
-
-/* --- carrusel cuervos --- */
-.container{
-  position:relative;
-  width:100%;
-  max-width:1200px;
-  height:clamp(240px, 35vh, 500px);
-  overflow:hidden;
-  background-image:
-    linear-gradient(to bottom, rgba(0,0,0,.45), rgba(0,0,0,.75)),
-    url('https://images.unsplash.com/photo-1446824505046-e43605ffb17f?auto=format&fit=crop&w=1200&q=80');
-  background-size:cover;
-  background-position:center;
-  display:flex;
-  align-items:center;
-  justify-content:center;
-}
-.container h1{
-  font-size:clamp(1.4rem, 2.5vw + .5rem, 3rem);
-  text-align:center;
-  letter-spacing:-1px;
-  text-shadow:0 1px 4px rgba(0,0,0,.6);
-  z-index:3;
-  max-width:90%;
-}
-
-/* cuervo animado */
-.cuervo{
-  position:absolute;
-  top:20%;
-  left:-120px;
-  width:clamp(70px, 10vmin, 100px);
-  aspect-ratio:88/125;
-  background:url('https://s3-us-west-2.amazonaws.com/s.cdpn.io/174479/bird-cells-new.svg') 0 0 / auto 100%;
-  animation:fly-cycle .8s steps(10) infinite, fly-ltr 20s linear infinite;
-  will-change:transform,background-position;
-}
-/* retrasos para 6 cuervos */
-.cuervo:nth-child(1){animation-delay:0s,0s;}
-.cuervo:nth-child(2){animation-delay:-.3s,3.3s;}
-.cuervo:nth-child(3){animation-delay:-.6s,6.6s;}
-.cuervo:nth-child(4){animation-delay:-.9s,9.9s;}
-.cuervo:nth-child(5){animation-delay:-1.2s,12.2s;}
-.cuervo:nth-child(6){animation-delay:-1.5s,15.5s;}
-
-@keyframes fly-cycle{
-  100%{background-position:-880px 0;}
-}
-@keyframes fly-ltr{
-  0%{transform:translateX(-120px) translateY(0) scale(.35);}
-  20%{transform:translateX(20vw) translateY(2vh) scale(.45);}
-  40%{transform:translateX(40vw) translateY(-1vh) scale(.5);}
-  60%{transform:translateX(60vw) translateY(3vh) scale(.55);}
-  80%{transform:translateX(80vw) translateY(0) scale(.5);}
-  100%{transform:translateX(calc(100vw + 120px)) translateY(1vh) scale(.45);}
-}
-
-/* responsive helpers */
-@media (max-width: 480px){
-  header{padding:.5rem .75rem}
-  #hamburger{width:28px;height:28px}
-}
-    /* ------------------------Final del menu--------------------------------------------*/
-    
-</style>
+  </style>
 </head>
+
 <body>
+  <!-- Header -->
+  <header>
+    <h1>Cuervo Photography</h1>
+    <button id="hamburger" aria-label="Abrir menú" aria-controls="wheelWrapper" aria-expanded="false">
+      <span></span><span></span><span></span>
+    </button>
+  </header>
 
-<header>
-  <h1>Cuervo Photography</h1>
-  <button id="hamburger" aria-label="Abrir menú" aria-controls="wheelWrapper" aria-expanded="false">
-    <span></span><span></span><span></span>
-  </button>
-</header>
+  <!-- Wheel menu -->
+  <div id="wheelWrapper" aria-hidden="true">
+    <div class="core-menu" role="menu">
+      <button class="center-button" onclick="closeWheel()" aria-label="Cerrar menú">Cerrar</button>
 
-<!-- Menu -->
-<div id="wheelWrapper" aria-hidden="true">
-  <div class="core-menu" role="menu" aria-label="Menú principal">
-    <button class="center-button" onclick="closeWheel()" aria-label="Cerrar menú">Cerrar</button>
-
-    <a class="menu-button" role="menuitem" href="plantas.html"   data-bg="https://images.unsplash.com/photo-1520412099551-62b6bafeb5bb?auto=format&fit=crop&w=1200&q=80">🌱 Plantas</a>
-    <a class="menu-button" role="menuitem" href="animales.html"  data-bg="https://images.unsplash.com/photo-1549480017-d76466a4b7e8?auto=format&fit=crop&w=1200&q=80">💡 Animales</a>
-    <a class="menu-button" role="menuitem" href="naturaleza.html" data-bg="https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1200&q=80">📡 Naturaleza</a>
-    <a class="menu-button" role="menuitem" href="curiosidades.html" data-bg="https://images.unsplash.com/photo-1494253109108-2e30c049369b?auto=format&fit=crop&w=1200&q=80">🧠 Curiosidades</a>
-    <a class="menu-button" role="menuitem" href="social.html"    data-bg="https://images.unsplash.com/photo-1611162616475-46b635cb6868?auto=format&fit=crop&w=1200&q=80">🔮 Redes Sociales</a>
-    <a class="menu-button" role="menuitem" href="sobremi.html"   data-bg="https://images.unsplash.com/photo-1487412912498-0447578fcca8?auto=format&fit=crop&w=1200&q=80">🌐 Sobre mí</a>
+      <a class="menu-button" role="menuitem" href="plantas.html"     data-bg="https://images.unsplash.com/photo-1520412099551-62b6bafeb5bb?auto=format&fit=crop&w=1200&q=80">🌱 Plantas</a>
+      <a class="menu-button" role="menuitem" href="animales.html"    data-bg="https://images.unsplash.com/photo-1549480017-d76466a4b7e8?auto=format&fit=crop&w=1200&q=80">🐾 Animales</a>
+      <a class="menu-button" role="menuitem" href="naturaleza.html"  data-bg="https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=1200&q=80">🌲 Naturaleza</a>
+      <a class="menu-button" role="menuitem" href="curiosidades.html" data-bg="https://images.unsplash.com/photo-1494253109108-2e30c049369b?auto=format&fit=crop&w=1200&q=80">🧠 Curiosidades</a>
+      <a class="menu-button" role="menuitem" href="social.html"      data-bg="https://images.unsplash.com/photo-1611162616475-46b635cb6868?auto=format&fit=crop&w=1200&q=80">📱 Redes</a>
+      <a class="menu-button" role="menuitem" href="sobremi.html"     data-bg="https://images.unsplash.com/photo-1487412912498-0447578fcca8?auto=format&fit=crop&w=1200&q=80">👤 Sobre mí</a>
+    </div>
   </div>
-  
-<!-- Final del menu -->
-  
-<!-- Carrusel principal-->
-  <div class="container">
-  <h1>Bienvenidos al blog de un cuervo<br>donde nos fijamos en los pequeños detalles de la naturaleza</h1>
 
-  <div class="cuervo"></div>
-  <div class="cuervo"></div>
-  <div class="cuervo"></div>
-  <div class="cuervo"></div>
-  <div class="cuervo"></div>
-  <div class="cuervo"></div>
-</div>
+  <!-- Hero carousel -->
+  <section class="hero" aria-label="Carrusel principal">
+    <div class="hero-track">
+      <div class="hero-slide" style="background-image:url('https://images.unsplash.com/photo-1446824505046-e43605ffb17f?auto=format&fit=crop&w=1200&q=80')">
+        <h2>Bienvenidos al blog de un cuervo<br>donde observamos los pequeños detalles de la naturaleza</h2>
+      </div>
+      <div class="hero-slide" style="background-image:url('https://images.unsplash.com/photo-1496865534669-25ec2a3d0f5d?auto=format&fit=crop&w=1200&q=80')">
+        <h2>Descubre el mundo oculto<br>tras la lente de un cuervo</h2>
+      </div>
+      <div class="hero-slide" style="background-image:url('https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?auto=format&fit=crop&w=1200&q=80')">
+        <h2>Explora, aprende y comparte<br>la magia de lo cotidiano</h2>
+      </div>
+    </div>
 
+    <button class="hero-arrow left" aria-label="Anterior">‹</button>
+    <button class="hero-arrow right" aria-label="Siguiente">›</button>
 
-<!-- Final del carrusel -->
-</div>
+    <div class="hero-nav" aria-label="Seleccionar diapositiva">
+      <button class="hero-dot active" data-slide="0"></button>
+      <button class="hero-dot" data-slide="1"></button>
+      <button class="hero-dot" data-slide="2"></button>
+    </div>
 
-<script>
-/* posicionar botones de la rueda (responsive) */
-const wheel  = document.querySelector('.core-menu');
-const btns   = wheel.querySelectorAll('.menu-button');
-const radius = .34; // 34 % del tamaño del círculo
-btns.forEach((b,i)=>{
-  const ang = (i/btns.length)*2*Math.PI - Math.PI/2;
-  const x = Math.cos(ang) * radius * 100; // %
-  const y = Math.sin(ang) * radius * 100; // %
-  const size = getComputedStyle(b).width;
-  b.style.left = `calc(50% + ${x}% - ${size}/2)`;
-  b.style.top  = `calc(50% + ${y}% - ${size}/2)`;
-});
+    <!-- Crows -->
+    <div class="cuervo"></div>
+    <div class="cuervo"></div>
+    <div class="cuervo"></div>
+  </section>
 
-/* toggle wheel */
-const ham  = document.getElementById('hamburger');
-const wrap = document.getElementById('wheelWrapper');
-function openWheel(){
-  wrap.classList.add('show');
-  wrap.setAttribute('aria-hidden','false');
-  ham.classList.add('open');
-  ham.setAttribute('aria-expanded','true');
-}
-function closeWheel(){
-  wrap.classList.remove('show');
-  wrap.setAttribute('aria-hidden','true');
-  ham.classList.remove('open');
-  ham.setAttribute('aria-expanded','false');
-}
-ham.addEventListener('click',()=> wrap.classList.contains('show')?closeWheel():openWheel());
+  <!-- Contenido principal -->
+  <main>
+    <section>
+      <h2 class="section-title">Artículos recientes</h2>
+      <div class="grid">
+        <article class="card">
+          <img src="https://images.unsplash.com/photo-1520412099551-62b6bafeb5bb?auto=format&fit=crop&w=800&q=80" alt="Hojas verdes" loading="lazy">
+          <div class="card-body">
+            <h3>Secretos de la fotografía macro de plantas</h3>
+            <p>Aprende a captar texturas y colores ocultos en cada hoja.</p>
+            <a href="plantas.html">Leer más →</a>
+          </div>
+        </article>
 
-/* click fuera del círculo cierra el menú */
-wrap.addEventListener('click',(e)=>{
-  if(e.target === wrap) closeWheel();
-});
+        <article class="card">
+          <img src="https://images.unsplash.com/photo-1549480017-d76466a4b7e8?auto=format&fit=crop&w=800&q=80" alt="Zorro" loading="lazy">
+          <div class="card-body">
+            <h3>Retratos de fauna urbana</h3>
+            <p>Cómo acercarse a los animales sin alterar su entorno.</p>
+            <a href="animales.html">Leer más →</a>
+          </div>
+        </article>
 
-/* Escape cierra el menú */
-document.addEventListener('keydown',(e)=>{
-  if(e.key==='Escape' && wrap.classList.contains('show')) closeWheel();
-});
+        <article class="card">
+          <img src="https://images.unsplash.com/photo-1470071459604-3b5ec3a7fe05?auto=format&fit=crop&w=800&q=80" alt="Bosque" loading="lazy">
+          <div class="card-body">
+            <h3>Óptica y perspectiva en paisajes</h3>
+            <p>Consejos para dar profundidad a tus fotos de naturaleza.</p>
+            <a href="naturaleza.html">Leer más →</a>
+          </div>
+        </article>
+      </div>
+    </section>
 
-/* cambiar fondo al pasar el ratón / enfocar */
-btns.forEach(btn=>{
-  const bg = btn.dataset.bg;
-  btn.addEventListener('mouseenter',()=> document.body.style.backgroundImage = `url('${bg}')`);
-  btn.addEventListener('focus',     ()=> document.body.style.backgroundImage = `url('${bg}')`);
-  btn.addEventListener('mouseleave',()=> document.body.style.backgroundImage = '');
-  btn.addEventListener('blur',      ()=> document.body.style.backgroundImage = '');
-});
-</script>
+    <section>
+      <h2 class="section-title">Categorías</h2>
+      <div class="grid">
+        <a class="card" href="curiosidades.html">
+          <img src="https://images.unsplash.com/photo-1494253109108-2e30c049369b?auto=format&fit=crop&w=800&q=80" alt="Microscopio">
+          <div class="card-body">
+            <h3>Curiosidades</h3>
+            <p>Datos sorprendentes sobre la naturaleza y la ciencia.</p>
+          </div>
+        </a>
+
+        <a class="card" href="social.html">
+          <img src="https://images.unsplash.com/photo-1611162616475-46b635cb6868?auto=format&fit=crop&w=800&q=80" alt="Instagram">
+          <div class="card-body">
+            <h3>Redes sociales</h3>
+            <p>Sígueme para contenido exclusivo y directos.</p>
+          </div>
+        </a>
+
+        <a class="card" href="sobremi.html">
+          <img src="https://images.unsplash.com/photo-1487412912498-0447578fcca8?auto=format&fit=crop&w=800&q=80" alt="Autor">
+          <div class="card-body">
+            <h3>Sobre mí</h3>
+            <p>Conoce al cuervo detrás de la cámara.</p>
+          </div>
+        </a>
+      </div>
+    </section>
+  </main>
+
+  <!-- Footer -->
+  <footer>
+    <h1><a href="https://instagram.com/cuervophotography" target="_blank" rel="noopener">Instagram</a></h1>
+    <p>Gracias por tu visita — ¡Nos vemos en la próxima aventura!</p>
+  </footer>
+
+  <!-- Scripts -->
+  <script>
+    /* ---------- Wheel menu ---------- */
+    const wheel   = document.querySelector('.core-menu');
+    const btns    = wheel.querySelectorAll('.menu-button');
+    const radius  = .36;
+    btns.forEach((b,i)=>{
+      const ang = (i/btns.length)*2*Math.PI - Math.PI/2;
+      const x = Math.cos(ang) * radius * 100;
+      const y = Math.sin(ang) * radius * 100;
+      const size = getComputedStyle(b).width;
+      b.style.left = `calc(50% + ${x}% - ${size}/2)`;
+      b.style.top  = `calc(50% + ${y}% - ${size}/2)`;
+    });
+
+    const ham  = document.getElementById('hamburger');
+    const wrap = document.getElementById('wheelWrapper');
+    function openWheel(){
+      wrap.classList.add('show');
+      ham.classList.add('open');
+      wrap.setAttribute('aria-hidden','false');
+      ham.setAttribute('aria-expanded','true');
+    }
+    function closeWheel(){
+      wrap.classList.remove('show');
+      ham.classList.remove('open');
+      wrap.setAttribute('aria-hidden','true');
+      ham.setAttribute('aria-expanded','false');
+    }
+    ham.addEventListener('click',()=> wrap.classList.contains('show')?closeWheel():openWheel());
+    wrap.addEventListener('click',e=>{if(e.target===wrap)closeWheel()});
+    document.addEventListener('keydown',e=>{if(e.key==='Escape')closeWheel()});
+
+    /* Dynamic bg on hover/focus */
+    btns.forEach(btn=>{
+      const bg = btn.dataset.bg;
+      btn.addEventListener('mouseenter',()=> document.body.style.backgroundImage=`url('${bg}')`);
+      btn.addEventListener('focus',()=> document.body.style.backgroundImage=`url('${bg}')`);
+      btn.addEventListener('mouseleave',()=> document.body.style.backgroundImage='');
+      btn.addEventListener('blur',()=> document.body.style.backgroundImage='');
+    });
+
+    /* ---------- Hero carousel ---------- */
+    const track  = document.querySelector('.hero-track');
+    const dots   = document.querySelectorAll('.hero-dot');
+    const arrows = document.querySelectorAll('.hero-arrow');
+    let current  = 0;
+
+    function goTo(index){
+      current = (index+3)%3;
+      track.style.transform=`translateX(-${current*33.333}%)`;
+      dots.forEach((d,i)=>d.classList.toggle('active',i===current));
+    }
+    dots.forEach((d,i)=>d.addEventListener('click',()=>goTo(i)));
+    arrows.forEach(a=>a.addEventListener('click',()=>a.classList.contains('left')?goTo(current-1):goTo(current+1)));
+
+    setInterval(()=>goTo(current+1),7000);
+  </script>
 </body>
 </html>
