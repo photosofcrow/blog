@@ -1,1 +1,8 @@
-
+{
+  "nombre": "Ciervo en el alba",
+  "categoria": "Fauna",
+  "url": "/montana.webp",
+  "emoji": "🦌",
+  "descripcion": "Ciervo macho al amanecer en el Pirineo aragonés. Niebla baja y luz rasante perfilando la cornamenta.",
+  "temas_relacionados": ["fauna", "amanecer", "pirineos", "mamíferos", "niebla"]
+}
