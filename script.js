@@ -33,14 +33,15 @@ function toArray(data, key) {
   return found || [];
 }
 
+const BASE = '/blog/data/';
+
 async function loadAllData() {
   const [site, equipo, fotosRaw, blogRaw] = await Promise.all([
-    loadJSON('data/site.json'),
-    loadJSON('data/equipo.json'),
-    loadJSON('data/fotos.json'),
-    loadJSON('data/blog.json'),
+    loadJSON(BASE + 'site.json'),
+    loadJSON(BASE + 'equipo.json'),
+    loadJSON(BASE + 'fotos.json'),
+    loadJSON(BASE + 'blog.json'),
   ]);
-
   state.site         = site;
   state.site.equipo  = Array.isArray(equipo) ? equipo : (equipo.items || []);
   state.site.cita    = equipo.cita || '';
