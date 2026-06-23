@@ -7,418 +7,183 @@
 <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-<canvas id="bg-canvas"></canvas>
 
-<!-- ===================== LANDING ===================== -->
-<div id="landing">
+<!-- CURSOR -->
+<svg id="cursor" viewBox="0 0 20 20" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="10" cy="10" r="3" fill="#cc0000"/>
+  <line x1="10" y1="0" x2="10" y2="6" stroke="#cc0000" stroke-width="1.5"/>
+  <line x1="10" y1="14" x2="10" y2="20" stroke="#cc0000" stroke-width="1.5"/>
+  <line x1="0" y1="10" x2="6" y2="10" stroke="#cc0000" stroke-width="1.5"/>
+  <line x1="14" y1="10" x2="20" y2="10" stroke="#cc0000" stroke-width="1.5"/>
+</svg>
+<svg id="cursor-ring" viewBox="0 0 36 36" fill="none" xmlns="http://www.w3.org/2000/svg">
+  <circle cx="18" cy="18" r="16" stroke="rgba(204,0,0,0.4)" stroke-width="1"/>
+</svg>
 
-  <!-- HEADER -->
-  <div class="land-header">
-    <div>
-      <div class="site-name">icesmoke</div>
-      <div class="site-tagline">Fotografía · Ciberseguridad · Código</div>
-    </div>
-    <div class="nav-links">
-      <button class="nav-link" onclick="goTo('photo')">Fotografía</button>
-      <button class="nav-link" onclick="goTo('cyber')">Seguridad</button>
-      <button class="nav-link" onclick="goTo('win95')">Código</button>
-    </div>
-  </div>
+<!-- TRANSITION OVERLAY -->
+<div id="trans-overlay">
+  <canvas id="trans-canvas"></canvas>
+  <div id="trans-label"></div>
+</div>
 
-  <!-- SOBRE MÍ -->
-  <div class="about-strip">
-    <div class="about-avatar">🧊</div>
-    <div class="about-bio">
-      <h3>Hola, soy icesmoke</h3>
-      <p>Fotógrafo de naturaleza, analista de ciberseguridad y desarrollador. Capturo el mundo salvaje, lo protejo digitalmente y construyo herramientas con código.</p>
-      <div class="skills-row">
-        <span class="skill-tag">Fotografía</span>
-        <span class="skill-tag">Red Team</span>
-        <span class="skill-tag">Blue Team</span>
-        <span class="skill-tag">Python</span>
-        <span class="skill-tag">JavaScript</span>
-        <span class="skill-tag">Forense</span>
-        <span class="skill-tag">OSINT</span>
+<!-- BLOG MODAL -->
+<div id="blog-modal">
+  <div class="modal-box">
+    <div class="modal-header">
+      <div>
+        <div class="modal-cat" id="modal-cat"></div>
+        <div class="modal-title" id="modal-title"></div>
       </div>
+      <button class="modal-close" onclick="closeBlogModal()">✕</button>
     </div>
-  </div>
-
-  <!-- PORTALES -->
-  <div class="portals-row">
-    <div class="portal portal-photo" onclick="goTo('photo')">
-      <div class="portal-icon">🌿</div>
-      <div class="portal-name">Fotografía</div>
-      <div class="portal-preview">Fauna · Paisajes rurales<br>Macro · Montaña · Senderos</div>
-    </div>
-    <div class="portal portal-cyber" onclick="goTo('cyber')">
-      <div class="portal-icon" style="color:#00ff41">⬡</div>
-      <div class="portal-name" style="color:#00ff41">Ciberseguridad</div>
-      <div class="portal-preview">&gt; Red Team · Blue Team<br>&gt; Pentesting · Forense<br>&gt; OSINT · Malware</div>
-    </div>
-    <div class="portal portal-code" onclick="goTo('win95')">
-      <div class="portal-icon">🖥️</div>
-      <div class="portal-name">Programación</div>
-      <div class="portal-preview">Windows 95 · Logo animado<br>Proyectos · Stack completo</div>
-    </div>
-  </div>
-
-  <!-- BLOG + FOTOS -->
-  <div class="bottom-row">
-
-    <!-- BLOG -->
-    <div>
-      <div class="section-label">Últimas entradas del blog</div>
-      <div class="blog-list">
-        <div class="blog-item">
-          <span class="blog-cat">Fotografía</span>
-          <span class="blog-title">Amanecer en el Pirineo: cómo planifiqué la sesión</span>
-          <span class="blog-date">Jun 2025</span>
-        </div>
-        <div class="blog-item">
-          <span class="blog-cat">Seguridad</span>
-          <span class="blog-title">CVE-2024-4879: análisis y explotación controlada</span>
-          <span class="blog-date">May 2025</span>
-        </div>
-        <div class="blog-item">
-          <span class="blog-cat">Código</span>
-          <span class="blog-title">Construyendo un SIEM ligero con Python y Elastic</span>
-          <span class="blog-date">May 2025</span>
-        </div>
-        <div class="blog-item">
-          <span class="blog-cat">Fotografía</span>
-          <span class="blog-title">Fotografiar el lince: paciencia, técnica y suerte</span>
-          <span class="blog-date">Abr 2025</span>
-        </div>
-        <div class="blog-item">
-          <span class="blog-cat">Seguridad</span>
-          <span class="blog-title">OSINT con fuentes abiertas: guía práctica 2025</span>
-          <span class="blog-date">Abr 2025</span>
-        </div>
-        <div class="blog-item">
-          <span class="blog-cat">Código</span>
-          <span class="blog-title">Docker en entornos de pentest: mi setup completo</span>
-          <span class="blog-date">Mar 2025</span>
-        </div>
-      </div>
-    </div>
-
-    <!-- POLAROIDS -->
-    <div>
-      <div class="section-label">Últimas fotos</div>
-      <div class="polaroids-area" id="polaroids-area">
-        <!-- generadas por JS -->
-      </div>
-    </div>
-
+    <div class="modal-body" id="modal-body"></div>
   </div>
 </div>
 
-<!-- ===================== PHOTO SECTION ===================== -->
+<canvas id="bg-canvas"></canvas>
+
+<!-- ═══════════════ LANDING ═══════════════ -->
+<div id="landing">
+  <nav class="topbar">
+    <div class="logo-text" id="logo-text-el">ice<span>smoke</span></div>
+    <div class="topnav">
+      <button class="topnav-link" onclick="goTo('photo')">Fotografía</button>
+      <button class="topnav-link" onclick="goTo('cyber')">Seguridad</button>
+      <button class="topnav-link" onclick="goTo('win95')">Código</button>
+      <button class="topnav-cta">Contacto</button>
+    </div>
+  </nav>
+  <div class="hero-band">
+    <div class="hero-grid">
+      <div class="hero-avatar" id="hero-av">🧊</div>
+      <div class="hero-info">
+        <h1 id="site-name-h1"><strong></strong></h1>
+        <p id="site-bio"></p>
+        <div class="skill-row" id="site-skills"></div>
+      </div>
+      <div class="hero-stats" id="site-stats"></div>
+    </div>
+  </div>
+  <div class="section-band">
+    <span class="section-band-label">Últimas fotos</span>
+    <div class="section-band-line"></div>
+    <button onclick="goTo('photo')" style="font-size:0.57rem;letter-spacing:0.18em;text-transform:uppercase;color:var(--red);background:none;border:none;cursor:pointer">Ver galería →</button>
+  </div>
+  <div class="photo-banner">
+    <div class="photo-strip" id="landing-photo-strip"></div>
+  </div>
+  <div class="section-band"><span class="section-band-label">Mis mundos</span><div class="section-band-line"></div></div>
+  <div class="portals-band">
+    <div class="portals-inner">
+      <div class="portal" onclick="goTo('photo')"><div class="portal-ico">🌿</div><div class="portal-txt"><h3>Fotografía</h3><p id="portal-photo-desc"></p></div><div class="portal-arrow">›</div></div>
+      <div class="portal" onclick="goTo('cyber')"><div class="portal-ico" style="color:var(--green)">⬡</div><div class="portal-txt"><h3>Ciberseguridad</h3><p id="portal-cyber-desc"></p></div><div class="portal-arrow">›</div></div>
+      <div class="portal" onclick="goTo('win95')"><div class="portal-ico">🖥️</div><div class="portal-txt"><h3>Programación</h3><p id="portal-code-desc"></p></div><div class="portal-arrow">›</div></div>
+    </div>
+  </div>
+  <div class="section-band"><span class="section-band-label">Blog</span><div class="section-band-line"></div></div>
+  <div class="blog-band">
+    <div class="blog-inner">
+      <div class="blog-grid" id="blog-grid"></div>
+    </div>
+  </div>
+  <footer class="site-footer">
+    <div class="footer-inner">
+      <div><div class="footer-logo">ice<span>smoke</span></div><div style="font-size:0.55rem;color:var(--txt-m);font-family:'Courier New',monospace;margin-top:0.3rem" id="footer-tagline"></div></div>
+      <div class="footer-links">
+        <a class="footer-link" onclick="goTo('photo')">Galería</a>
+        <a class="footer-link" onclick="goTo('cyber')">Seguridad</a>
+        <a class="footer-link" onclick="goTo('win95')">Código</a>
+        <a class="footer-link">GitHub</a>
+        <a class="footer-link">LinkedIn</a>
+      </div>
+      <div class="footer-copy">© 2025 icesmoke<br>hecho con código y café ☕</div>
+    </div>
+  </footer>
+</div>
+
+<!-- ═══════════════ PHOTO ═══════════════ -->
 <div class="section" id="photo-section">
   <button class="back-btn" onclick="goTo('landing')">← Inicio</button>
   <canvas id="bird-canvas" style="position:absolute;inset:0;z-index:1;pointer-events:none"></canvas>
-
-  <!-- Mountain SVG bg -->
-  <svg id="mtn-svg" width="100%" height="100%" viewBox="0 0 1000 600"
-       preserveAspectRatio="xMidYMid slice"
-       style="position:absolute;inset:0;z-index:0;pointer-events:none">
+  <svg id="mtn-svg" width="100%" height="100%" viewBox="0 0 1000 600" preserveAspectRatio="xMidYMid slice" style="position:absolute;inset:0;z-index:0;pointer-events:none">
     <defs>
-      <linearGradient id="sky2" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#1a2e0a"/>
-        <stop offset="45%" stop-color="#2d4a1a"/>
-        <stop offset="80%" stop-color="#4a6a28"/>
-        <stop offset="100%" stop-color="#6b8a40"/>
-      </linearGradient>
-      <linearGradient id="hillg" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#2a3d18"/><stop offset="100%" stop-color="#162008"/>
-      </linearGradient>
-      <linearGradient id="fieldg" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="#3d5522"/><stop offset="100%" stop-color="#253515"/>
-      </linearGradient>
-      <linearGradient id="fogR" x1="0" y1="0" x2="0" y2="1">
-        <stop offset="0%" stop-color="rgba(180,200,170,0)"/>
-        <stop offset="50%" stop-color="rgba(180,200,170,0.18)"/>
-        <stop offset="100%" stop-color="rgba(180,200,170,0)"/>
-      </linearGradient>
+      <linearGradient id="sky2" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#0e1a08"/><stop offset="45%" stop-color="#1e3010"/><stop offset="80%" stop-color="#344a1a"/><stop offset="100%" stop-color="#4a6428"/></linearGradient>
+      <linearGradient id="hillg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#22341a"/><stop offset="100%" stop-color="#101808"/></linearGradient>
+      <linearGradient id="fieldg" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="#2e4418"/><stop offset="100%" stop-color="#1a2810"/></linearGradient>
+      <linearGradient id="fogR" x1="0" y1="0" x2="0" y2="1"><stop offset="0%" stop-color="rgba(160,185,140,0)"/><stop offset="50%" stop-color="rgba(160,185,140,0.14)"/><stop offset="100%" stop-color="rgba(160,185,140,0)"/></linearGradient>
     </defs>
     <rect width="1000" height="600" fill="url(#sky2)"/>
-    <!-- Clouds -->
-    <g fill="rgba(255,255,255,0.07)">
-      <ellipse cx="150" cy="120" rx="130" ry="32"/>
-      <ellipse cx="185" cy="112" rx="80" ry="24"/>
-      <ellipse cx="600" cy="100" rx="110" ry="28"/>
-      <ellipse cx="635" cy="92" rx="65" ry="20"/>
-      <ellipse cx="850" cy="130" rx="90" ry="22"/>
-    </g>
-    <!-- Rolling hills - far -->
-    <polygon id="hillfar" points="0,380 120,260 280,320 420,210 560,300 700,190 860,280 1000,240 1000,600 0,600" fill="url(#hillg)" opacity="0.9"/>
-    <!-- Rolling hills - near -->
-    <polygon id="hillnear" points="0,460 180,350 360,420 520,320 680,400 840,330 1000,370 1000,600 0,600" fill="url(#fieldg)"/>
-    <!-- Hedge row -->
-    <g fill="#1a2a0a" opacity="0.8">
-      <rect x="0" y="500" width="1000" height="6"/>
-      <ellipse cx="80" cy="500" rx="30" ry="14"/>
-      <ellipse cx="150" cy="498" rx="25" ry="12"/>
-      <ellipse cx="240" cy="502" rx="35" ry="15"/>
-      <ellipse cx="330" cy="499" rx="28" ry="13"/>
-      <ellipse cx="420" cy="501" rx="32" ry="14"/>
-      <ellipse cx="520" cy="498" rx="26" ry="12"/>
-      <ellipse cx="610" cy="502" rx="30" ry="13"/>
-      <ellipse cx="710" cy="499" rx="34" ry="14"/>
-      <ellipse cx="820" cy="501" rx="28" ry="12"/>
-      <ellipse cx="910" cy="499" rx="32" ry="13"/>
-      <ellipse cx="980" cy="502" rx="25" ry="11"/>
-    </g>
-    <!-- Stone wall -->
-    <rect x="0" y="510" width="1000" height="12" fill="#4a3a28" opacity="0.6"/>
-    <g fill="#3a2a1a" opacity="0.4">
-      <rect x="20" y="510" width="40" height="5" rx="1"/>
-      <rect x="75" y="515" width="35" height="5" rx="1"/>
-      <rect x="125" y="510" width="45" height="5" rx="1"/>
-      <rect x="185" y="515" width="38" height="5" rx="1"/>
-      <rect x="240" y="510" width="42" height="5" rx="1"/>
-    </g>
-    <!-- Trees - deciduous rural style -->
-    <g fill="#1e2e10">
-      <!-- Fat round trees -->
-      <ellipse cx="55" cy="470" rx="22" ry="28"/>
-      <rect x="51" y="490" width="8" height="30"/>
-      <ellipse cx="920" cy="465" rx="25" ry="30"/>
-      <rect x="916" y="488" width="8" height="32"/>
-      <ellipse cx="965" cy="475" rx="18" ry="22"/>
-      <rect x="962" y="492" width="7" height="28"/>
-    </g>
-    <!-- Tall thin pines left -->
-    <g fill="#162210">
-      <polygon points="28,500 38,420 48,500"/>
-      <polygon points="30,490 38,435 46,490"/>
-      <rect x="35" y="500" width="6" height="30"/>
-    </g>
-    <!-- Ground grass -->
-    <rect x="0" y="520" width="1000" height="80" fill="#253515" opacity="0.95"/>
-    <rect x="0" y="560" width="1000" height="40" fill="#1a2510"/>
-    <!-- Grass tufts -->
-    <g stroke="#3a5520" stroke-width="1.5" fill="none" opacity="0.6">
-      <path d="M200,524 Q202,514 204,524"/><path d="M203,524 Q206,512 208,524"/>
-      <path d="M450,522 Q452,513 454,522"/><path d="M453,522 Q456,511 458,522"/>
-      <path d="M700,525 Q702,515 704,525"/><path d="M703,525 Q706,513 708,525"/>
-    </g>
-    <!-- Fog -->
-    <rect x="0" y="430" width="1000" height="80" fill="url(#fogR)"/>
-    <!-- Birds placeholder group -->
-    <g id="bird-svgg"></g>
+    <g fill="rgba(255,255,255,0.05)"><ellipse cx="160" cy="115" rx="130" ry="30"/><ellipse cx="195" cy="107" rx="78" ry="23"/><ellipse cx="610" cy="98" rx="115" ry="27"/><ellipse cx="860" cy="128" rx="95" ry="22"/></g>
+    <polygon id="hillfar" points="0,375 125,255 285,315 428,205 565,295 708,185 868,278 1000,238 1000,600 0,600" fill="url(#hillg)" opacity="0.92"/>
+    <polygon id="hillnear" points="0,458 182,348 365,418 528,318 685,398 845,328 1000,368 1000,600 0,600" fill="url(#fieldg)"/>
+    <g fill="#162010" opacity="0.85"><rect x="0" y="498" width="1000" height="6"/><ellipse cx="75" cy="498" rx="32" ry="14"/><ellipse cx="245" cy="500" rx="36" ry="15"/><ellipse cx="525" cy="496" rx="27" ry="12"/><ellipse cx="718" cy="497" rx="35" ry="14"/><ellipse cx="918" cy="497" rx="33" ry="13"/></g>
+    <rect x="0" y="508" width="1000" height="14" fill="#3a2a18" opacity="0.5"/>
+    <g fill="#162010"><ellipse cx="52" cy="468" rx="23" ry="29"/><rect x="48" y="490" width="8" height="28"/><ellipse cx="925" cy="463" rx="26" ry="31"/><rect x="921" y="487" width="8" height="30"/></g>
+    <g fill="#101a08"><polygon points="24,500 34,418 44,500"/><polygon points="26,490 34,432 42,490"/><rect x="31" y="500" width="6" height="28"/></g>
+    <rect x="0" y="518" width="1000" height="82" fill="#1e2e10" opacity="0.96"/>
+    <rect x="0" y="558" width="1000" height="42" fill="#141e0a"/>
+    <rect x="0" y="428" width="1000" height="82" fill="url(#fogR)"/>
   </svg>
-
-  <!-- RURAL CONTENT -->
-  <div style="position:relative;z-index:5;padding:52vh 2rem 4rem">
-
-    <div class="rural-header" style="padding:0 2rem 2rem">
-      <div class="wooden-sign">
-        <h1>Galería de icesmoke</h1>
-        <p>Naturaleza · Fauna · Senderos</p>
-      </div>
-    </div>
-
+  <div style="position:relative;z-index:5;padding:50vh 2rem 4rem">
+    <div style="text-align:center;padding:0 2rem 2rem"><div class="wooden-sign"><h1>Galería de icesmoke</h1><p>Naturaleza · Fauna · Senderos</p></div></div>
     <div class="dirt-path">
+      <div class="milestone"><div class="milestone-stone">🗺️</div><div class="milestone-text"><strong>El camino comienza aquí</strong>Cada imagen es una madrugada en el campo, una espera silenciosa con el teleobjetivo apuntado al horizonte.</div></div>
+      <div class="fence"><div class="fence-post" style="height:34px"></div><div class="fence-wire"></div><div class="fence-post" style="height:30px"></div><div class="fence-wire"></div><div class="fence-post" style="height:36px"></div><div class="fence-wire"></div><div class="fence-post" style="height:32px"></div><div class="fence-wire"></div><div class="fence-post" style="height:35px"></div><div class="fence-wire"></div><div class="fence-post" style="height:31px"></div></div>
 
-      <!-- Milestone intro -->
-      <div class="milestone">
-        <div class="milestone-stone">🗺️</div>
-        <div class="milestone-text">
-          <strong>El camino comienza aquí</strong>
-          Cada imagen es un kilómetro recorrido, una madrugada en el campo, una espera silenciosa con el teleobjetivo apuntado al horizonte.
-        </div>
-      </div>
+      <!-- FILTROS por categoría -->
+      <div id="photo-filters" style="display:flex;flex-wrap:wrap;gap:0.5rem;margin:1rem 0 1.5rem"></div>
 
-      <div class="fence">
-        <div class="fence-post" style="height:38px"></div><div class="fence-wire"></div>
-        <div class="fence-post" style="height:34px"></div><div class="fence-wire"></div>
-        <div class="fence-post" style="height:40px"></div><div class="fence-wire"></div>
-        <div class="fence-post" style="height:36px"></div><div class="fence-wire"></div>
-        <div class="fence-post" style="height:38px"></div><div class="fence-wire"></div>
-        <div class="fence-post" style="height:35px"></div><div class="fence-wire"></div>
-        <div class="fence-post" style="height:39px"></div><div class="fence-wire"></div>
-        <div class="fence-post" style="height:37px"></div>
-      </div>
+      <!-- Galería dinámica desde JSON -->
+      <div id="photo-gallery-grid" class="rural-gallery" style="grid-template-columns:repeat(auto-fit,minmax(210px,1fr))"></div>
 
-      <!-- FAUNA GALLERY -->
-      <div class="milestone">
-        <div class="milestone-stone">🦌</div>
-        <div class="milestone-text">
-          <strong>Fauna salvaje</strong>
-          La paciencia como herramienta principal
-        </div>
-      </div>
-
-      <div class="rural-gallery">
-        <div class="rural-card">
-          <div class="rural-card-img" style="background:linear-gradient(135deg,#1a2e0a,#2d4a1a,#3d5a28)">
-            <span style="position:relative;z-index:1">🦌</span>
-          </div>
-          <div class="rural-card-info">
-            <h3>Ciervo en el alba</h3>
-            <p>Pirineos · Octubre 2024</p>
-          </div>
-        </div>
-        <div class="rural-card">
-          <div class="rural-card-img" style="background:linear-gradient(135deg,#2a1a0a,#4a3018,#6b4a28)">
-            <span style="position:relative;z-index:1">🦊</span>
-          </div>
-          <div class="rural-card-info">
-            <h3>Zorro al atardecer</h3>
-            <p>Sierra Nevada · Marzo 2025</p>
-          </div>
-        </div>
-        <div class="rural-card">
-          <div class="rural-card-img" style="background:linear-gradient(135deg,#0a1a2a,#1a3a5a,#2a5a7a)">
-            <span style="position:relative;z-index:1">🦅</span>
-          </div>
-          <div class="rural-card-info">
-            <h3>Águila real en vuelo</h3>
-            <p>Ordesa · Enero 2025</p>
-          </div>
-        </div>
-      </div>
-
-      <div class="fence">
-        <div class="fence-post" style="height:36px"></div><div class="fence-wire"></div>
-        <div class="fence-post" style="height:40px"></div><div class="fence-wire"></div>
-        <div class="fence-post" style="height:35px"></div><div class="fence-wire"></div>
-        <div class="fence-post" style="height:38px"></div><div class="fence-wire"></div>
-        <div class="fence-post" style="height:33px"></div><div class="fence-wire"></div>
-        <div class="fence-post" style="height:37px"></div>
-      </div>
-
-      <!-- PAISAJES -->
-      <div class="milestone">
-        <div class="milestone-stone">🌅</div>
-        <div class="milestone-text">
-          <strong>Paisajes rurales</strong>
-          Campos, senderos y horizontes abiertos
-        </div>
-      </div>
-
-      <div class="rural-gallery">
-        <div class="rural-card">
-          <div class="rural-card-img" style="background:linear-gradient(135deg,#1a0a0a,#4a1a0a,#8b4a1a)">
-            <span style="position:relative;z-index:1">🌾</span>
-          </div>
-          <div class="rural-card-info">
-            <h3>Campos de trigo</h3>
-            <p>Castilla · Julio 2024</p>
-          </div>
-        </div>
-        <div class="rural-card">
-          <div class="rural-card-img" style="background:linear-gradient(135deg,#0a1a0a,#1a3a1a,#2a5a2a)">
-            <span style="position:relative;z-index:1">🌲</span>
-          </div>
-          <div class="rural-card-info">
-            <h3>Bosque de pinos</h3>
-            <p>Cuenca · Noviembre 2024</p>
-          </div>
-        </div>
-        <div class="rural-card">
-          <div class="rural-card-img" style="background:linear-gradient(135deg,#0a0a2a,#1a1a4a,#2a2a6a)">
-            <span style="position:relative;z-index:1">🌌</span>
-          </div>
-          <div class="rural-card-info">
-            <h3>Vía Láctea rural</h3>
-            <p>Extremadura · Agosto 2024</p>
-          </div>
-        </div>
-      </div>
-
-      <!-- Notice board -->
-      <div class="notice-board">
-        <h3>Mi equipo de campo</h3>
-        <div class="notice-items">
-          <span class="notice-tag">📷 Sony A7 IV</span>
-          <span class="notice-tag">🔭 Sigma 500mm f/5.6</span>
-          <span class="notice-tag">🌸 Macro 100mm</span>
-          <span class="notice-tag">🏔️ Gran angular 16mm</span>
-          <span class="notice-tag">🎯 Trípode Gitzo</span>
-          <span class="notice-tag">🌫️ Filtros ND</span>
-          <span class="notice-tag">⏰ Madrugadas</span>
-          <span class="notice-tag">🥾 Botas de montaña</span>
-        </div>
-      </div>
-
-      <!-- MACRO -->
-      <div class="milestone">
-        <div class="milestone-stone">🌸</div>
-        <div class="milestone-text">
-          <strong>Macro y detalle</strong>
-          El mundo invisible a simple vista
-        </div>
-      </div>
-
-      <div class="rural-gallery" style="grid-template-columns:repeat(auto-fit,minmax(200px,1fr))">
-        <div class="rural-card">
-          <div class="rural-card-img" style="background:linear-gradient(135deg,#2a1a0a,#5a3a18)">
-            <span style="position:relative;z-index:1">🍄</span>
-          </div>
-          <div class="rural-card-info"><h3>Seta en roble</h3><p>Macro · 100mm</p></div>
-        </div>
-        <div class="rural-card">
-          <div class="rural-card-img" style="background:linear-gradient(135deg,#0a2a0a,#1a5a1a)">
-            <span style="position:relative;z-index:1">🦋</span>
-          </div>
-          <div class="rural-card-info"><h3>Mariposa apollo</h3><p>Macro · 100mm</p></div>
-        </div>
-        <div class="rural-card">
-          <div class="rural-card-img" style="background:linear-gradient(135deg,#1a0a2a,#3a1a5a)">
-            <span style="position:relative;z-index:1">🕷️</span>
-          </div>
-          <div class="rural-card-info"><h3>Araña con rocío</h3><p>Macro · 100mm</p></div>
-        </div>
-        <div class="rural-card">
-          <div class="rural-card-img" style="background:linear-gradient(135deg,#2a2a0a,#5a5a1a)">
-            <span style="position:relative;z-index:1">🌼</span>
-          </div>
-          <div class="rural-card-info"><h3>Flor silvestre</h3><p>Macro · 100mm</p></div>
-        </div>
-      </div>
-
-      <div class="campfire-quote">
-        <span class="fire">🔥</span>
-        <blockquote>"La fotografía de naturaleza no es capturar la imagen — es ganarse el derecho a estar ahí."</blockquote>
-      </div>
-
+      <div class="notice-board"><h3>Mi equipo de campo</h3><div class="notice-items" id="photo-gear"></div></div>
+      <div class="campfire-quote"><span class="fire">🔥</span><blockquote id="photo-quote"></blockquote></div>
     </div>
   </div>
 </div>
 
-<!-- ===================== CYBER ===================== -->
+<!-- MODAL detalle de foto -->
+<div id="photo-modal" style="position:fixed;inset:0;z-index:8500;display:none;align-items:center;justify-content:center;background:rgba(0,0,0,0.92);backdrop-filter:blur(10px)">
+  <div style="background:#111;border:1px solid rgba(255,255,255,0.1);border-radius:4px;max-width:680px;width:92%;max-height:88vh;overflow-y:auto;position:relative">
+    <button onclick="closePhotoModal()" style="position:absolute;top:0.8rem;right:0.8rem;background:none;border:1px solid rgba(255,255,255,0.2);color:#888;width:28px;height:28px;cursor:pointer;border-radius:2px;font-size:1rem;z-index:1;display:flex;align-items:center;justify-content:center;transition:all .2s" onmouseover="this.style.background='#cc0000';this.style.color='#fff'" onmouseout="this.style.background='none';this.style.color='#888'">✕</button>
+    <div id="photo-modal-img" style="aspect-ratio:16/9;display:flex;align-items:center;justify-content:center;font-size:5rem;border-radius:4px 4px 0 0"></div>
+    <div style="padding:1.4rem 1.6rem 1.8rem">
+      <div id="photo-modal-cat" style="font-size:0.55rem;letter-spacing:0.25em;text-transform:uppercase;color:#cc0000;font-weight:600;margin-bottom:0.4rem"></div>
+      <div id="photo-modal-name" style="font-size:1.15rem;color:#e8e8e8;font-family:Georgia,serif;margin-bottom:0.5rem"></div>
+      <div id="photo-modal-desc" style="font-size:0.83rem;color:#777;line-height:1.8;margin-bottom:1.2rem"></div>
+      <div style="display:flex;gap:0.5rem;flex-wrap:wrap" id="photo-modal-tags"></div>
+    </div>
+  </div>
+</div>
+
+<!-- ═══════════════ CYBER ═══════════════ -->
 <div class="section" id="cyber-section">
   <canvas id="matrix-canvas" style="position:absolute;inset:0;z-index:0"></canvas>
   <div class="scan-line"></div>
-  <button class="back-btn" style="border-color:rgba(0,255,65,0.35);color:#00ff41;background:rgba(0,6,0,0.85)" onclick="goTo('landing')">← Inicio</button>
+  <button class="back-btn" style="border-color:rgba(0,255,65,0.3);color:#00ff41;background:rgba(0,5,0,0.88)" onclick="goTo('landing')">← Inicio</button>
   <div class="cyber-overlay" style="z-index:2">
-    <div style="text-align:center;margin-bottom:2rem">
-      <h2 class="glitch" style="color:#00ff41;font-family:'Courier New',monospace;font-size:clamp(1.1rem,2.5vw,1.7rem);letter-spacing:0.2em">ICESMOKE_SEC :: OPERATIONS_CENTER</h2>
-      <p style="color:rgba(0,255,65,0.4);font-family:monospace;font-size:0.72rem;letter-spacing:0.14em;margin-top:0.4rem">STATUS: <span class="status-dot"></span>ONLINE &nbsp;|&nbsp; CLEARANCE_5</p>
+    <div style="text-align:center;margin-bottom:1.8rem">
+      <h2 class="glitch" style="color:#00ff41;font-family:'Courier New',monospace;font-size:clamp(1rem,2.5vw,1.6rem);letter-spacing:0.2em">ICESMOKE_SEC :: OPERATIONS_CENTER</h2>
+      <p style="color:rgba(0,255,65,0.38);font-family:monospace;font-size:0.68rem;letter-spacing:0.14em;margin-top:0.35rem">STATUS: <span class="status-dot"></span>ONLINE &nbsp;|&nbsp; CLEARANCE_5</p>
     </div>
-    <div class="terminal-box" id="main-terminal">
-      <div class="terminal-header">
-        <span class="t-dot" style="background:#ff5f57"></span>
-        <span class="t-dot" style="background:#febc2e"></span>
-        <span class="t-dot" style="background:#28c840"></span>
-        <span class="terminal-title">icesmoke@kali:~$ — bash</span>
-      </div>
+    <!-- Network Map -->
+    <canvas id="net-canvas" width="700" height="200"></canvas>
+    <div class="terminal-box" style="margin-top:1.2rem">
+      <div class="terminal-header"><span class="t-dot" style="background:#ff5f57"></span><span class="t-dot" style="background:#febc2e"></span><span class="t-dot" style="background:#28c840"></span><span class="terminal-title">icesmoke@kali:~$ — bash</span></div>
       <div class="typed-text" id="typed-out"></div>
     </div>
-    <div class="cyber-grid" style="margin-top:2rem">
-      <div class="cyber-card"><h4><span class="status-dot"></span>PENTESTING</h4><p>Evaluación de vulnerabilidades · Reconocimiento · Explotación · Reporting ejecutivo</p></div>
+    <div class="cyber-grid" style="margin-top:1.5rem">
+      <div class="cyber-card"><h4><span class="status-dot"></span>PENTESTING</h4><p>Evaluación de vulnerabilidades · Reconocimiento · Explotación · Reporting</p></div>
       <div class="cyber-card"><h4><span class="status-dot"></span>RED TEAM</h4><p>Simulación APTs · Ingeniería social · Lateral movement · C2 frameworks</p></div>
-      <div class="cyber-card"><h4><span class="status-dot"></span>BLUE TEAM</h4><p>SIEM · Análisis de logs · Detección de anomalías · Threat Hunting · SOC</p></div>
-      <div class="cyber-card"><h4><span class="status-dot"></span>FORENSE</h4><p>Análisis de memoria · Artefactos del sistema · Cadena de custodia · Reporting</p></div>
+      <div class="cyber-card"><h4><span class="status-dot"></span>BLUE TEAM</h4><p>SIEM · Análisis de logs · Detección anomalías · Threat Hunting · SOC</p></div>
+      <div class="cyber-card"><h4><span class="status-dot"></span>FORENSE</h4><p>Análisis de memoria · Artefactos del sistema · Cadena de custodia</p></div>
       <div class="cyber-card"><h4><span class="status-dot" style="background:#fa0"></span>INVESTIGACIÓN</h4><p>OSINT · Análisis de malware · Threat Intelligence · CVE Research</p></div>
       <div class="cyber-card"><h4><span class="status-dot"></span>HERRAMIENTAS</h4><p>Nmap · Metasploit · Burp Suite · Wireshark · Volatility · Ghidra</p></div>
     </div>
   </div>
 </div>
 
-<!-- ===================== WIN95 ===================== -->
+<!-- ═══════════════ WIN95 ═══════════════ -->
 <div class="section" id="win95-section">
   <div class="desktop" id="desktop">
     <div class="icons-area">
@@ -430,27 +195,18 @@
       <div class="desktop-icon" onclick="openWin('browser')"><div class="ico">🌐</div><span>Proyectos Web</span></div>
       <div class="desktop-icon" onclick="goTo('landing')" style="margin-top:auto"><div class="ico">🚪</div><span>Inicio</span></div>
     </div>
-
-    <!-- LOGO WIN -->
     <div class="win-window" id="win-logo" style="display:none;top:40px;left:80px;width:480px">
-      <div class="win-titlebar" onmousedown="startDrag(event,'win-logo')">
-        <span>✦</span> icesmoke.logo — Auto-programándose
-        <div class="win-controls"><button class="win-btn" onclick="minimizeWin('win-logo')">_</button><button class="win-btn" onclick="closeWin('win-logo')">✕</button></div>
-      </div>
-      <div class="win-body" style="padding:0;background:#0d0d0d">
+      <div class="win-titlebar" onmousedown="startDrag(event,'win-logo')"><span>✦</span> icesmoke.logo — Auto-programándose<div class="win-controls"><button class="win-btn" onclick="minimizeWin('win-logo')">_</button><button class="win-btn" onclick="closeWin('win-logo')">✕</button></div></div>
+      <div class="win-body" style="padding:0;background:#0a0a0a">
         <canvas id="logo-canvas" width="476" height="200"></canvas>
-        <div style="background:#1a1a2e;border-top:2px solid #000080;padding:6px 8px;font-family:'Courier New',monospace;font-size:11px;line-height:1.75;color:#c0c0c0;min-height:130px;max-height:140px;overflow:hidden" id="logo-code-display"></div>
+        <div style="background:#12122a;border-top:2px solid #000080;padding:6px 8px;font-family:'Courier New',monospace;font-size:11px;line-height:1.75;color:#c0c0c0;min-height:130px;max-height:140px;overflow:hidden" id="logo-code-display"></div>
         <div style="background:#c0c0c0;padding:4px 8px;border-top:1px solid #808080;display:flex;gap:4px;align-items:center">
           <button onclick="replayLogo()" style="background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;font-size:11px;padding:2px 10px;cursor:pointer;font-family:'Courier New',monospace">▶ Replay</button>
           <span style="font-size:11px;font-family:'Courier New',monospace;color:#444" id="logo-status">Compilando...</span>
         </div>
       </div>
     </div>
-
-    <div class="win-window" id="win-about" style="display:none;top:55px;left:180px;width:340px">
-      <div class="win-titlebar" onmousedown="startDrag(event,'win-about')"><span>👤</span> Sobre icesmoke<div class="win-controls"><button class="win-btn" onclick="minimizeWin('win-about')">_</button><button class="win-btn" onclick="closeWin('win-about')">✕</button></div></div>
-      <div class="win-menu"><span class="win-menu-item">Archivo</span><span class="win-menu-item">Editar</span></div>
-      <div class="win-body"><div class="notepad-area">Soy icesmoke 🧊
+    <div class="win-window" id="win-about" style="display:none;top:55px;left:180px;width:340px"><div class="win-titlebar" onmousedown="startDrag(event,'win-about')"><span>👤</span> Sobre icesmoke<div class="win-controls"><button class="win-btn" onclick="minimizeWin('win-about')">_</button><button class="win-btn" onclick="closeWin('win-about')">✕</button></div></div><div class="win-menu"><span class="win-menu-item">Archivo</span><span class="win-menu-item">Editar</span></div><div class="win-body"><div class="notepad-area">Soy icesmoke 🧊
 
 Fotógrafo, analista de seguridad
 y desarrollador de software.
@@ -458,81 +214,17 @@ y desarrollador de software.
 Combino tres mundos:
 
   📸 Fotografía de naturaleza
-     Fauna, paisajes, macro
-
-  🔐 Ciberseguridad
-     Red Team, Blue Team, Forense
-
-  💻 Programación
-     Python, JS/TS, React, Node
+  🔐 Ciberseguridad (Red/Blue)
+  💻 Programación full-stack
 
 "La naturaleza no tiene bugs,
  solo comportamientos inesperados."
-</div></div>
-    </div>
-
-    <div class="win-window" id="win-projects" style="display:none;top:75px;left:220px;width:400px">
-      <div class="win-titlebar" onmousedown="startDrag(event,'win-projects')"><span>📁</span> Proyectos<div class="win-controls"><button class="win-btn" onclick="minimizeWin('win-projects')">_</button><button class="win-btn" onclick="closeWin('win-projects')">✕</button></div></div>
-      <div class="win-menu"><span class="win-menu-item">Archivo</span><span class="win-menu-item">Ver</span></div>
-      <div class="win-body">
-        <div class="tech-item">🔐 <b>SecureVault</b> — Gestor de contraseñas AES-256</div>
-        <div class="tech-item">🤖 <b>AutoPentest</b> — Framework pentesting automatizado</div>
-        <div class="tech-item">📸 <b>NatureAI</b> — Clasificación de fauna con ML</div>
-        <div class="tech-item">🌐 <b>NetMapper</b> — Visualizador redes en tiempo real</div>
-        <div class="tech-item">🦠 <b>MalwareDB</b> — Base de datos de IoCs</div>
-        <div class="tech-item">📊 <b>LogSentinel</b> — SIEM ligero en Python</div>
-      </div>
-    </div>
-
-    <div class="win-window" id="win-tech" style="display:none;top:95px;left:320px;width:340px">
-      <div class="win-titlebar" onmousedown="startDrag(event,'win-tech')"><span>⚙️</span> Tecnologías<div class="win-controls"><button class="win-btn" onclick="minimizeWin('win-tech')">_</button><button class="win-btn" onclick="closeWin('win-tech')">✕</button></div></div>
-      <div class="win-body">
-        <div style="font-weight:700;margin-bottom:5px">Lenguajes</div>
-        <div style="font-size:11px">Python</div><div class="progress-bar"><div class="progress-fill" style="width:90%"></div></div>
-        <div style="font-size:11px">JavaScript / TypeScript</div><div class="progress-bar"><div class="progress-fill" style="width:85%"></div></div>
-        <div style="font-size:11px">Bash / Shell</div><div class="progress-bar"><div class="progress-fill" style="width:82%"></div></div>
-        <div style="font-size:11px">C / C++</div><div class="progress-bar"><div class="progress-fill" style="width:60%"></div></div>
-        <div style="font-weight:700;margin:8px 0 5px">Stack</div>
-        <div class="tech-item">🐳 Docker · Kubernetes</div>
-        <div class="tech-item">🐧 Linux · Kali · Ubuntu</div>
-        <div class="tech-item">⚛️ React · Next.js · Node.js</div>
-        <div class="tech-item">🔧 Git · GitHub Actions · CI/CD</div>
-      </div>
-    </div>
-
-    <div class="win-window" id="win-contact" style="display:none;top:115px;left:430px;width:310px">
-      <div class="win-titlebar" onmousedown="startDrag(event,'win-contact')"><span>📧</span> Contacto<div class="win-controls"><button class="win-btn" onclick="minimizeWin('win-contact')">_</button><button class="win-btn" onclick="closeWin('win-contact')">✕</button></div></div>
-      <div class="win-body">
-        <div style="padding:6px;background:#000080;color:#fff;font-size:11px;margin-bottom:8px;text-align:center">📬 icesmoke — Contacto</div>
-        <div class="tech-item">📧 icesmoke@portfolio.dev</div>
-        <div class="tech-item">🐙 github.com/icesmoke</div>
-        <div class="tech-item">💼 linkedin.com/in/icesmoke</div>
-        <div class="tech-item">📷 instagram.com/icesmoke_foto</div>
-      </div>
-    </div>
-
-    <div class="win-window" id="win-browser" style="display:none;top:50px;left:155px;width:470px">
-      <div class="win-titlebar" onmousedown="startDrag(event,'win-browser')"><span>🌐</span> icesmoke Explorer — Proyectos Web<div class="win-controls"><button class="win-btn" onclick="minimizeWin('win-browser')">_</button><button class="win-btn" onclick="closeWin('win-browser')">✕</button></div></div>
-      <div style="background:#c0c0c0;padding:4px 6px;border-bottom:1px solid #808080;display:flex;gap:4px;align-items:center">
-        <span style="font-size:11px">Dirección:</span>
-        <div style="background:#fff;border:2px inset;flex:1;padding:1px 4px;font-size:11px;font-family:'Courier New',monospace">https://icesmoke.dev/projects</div>
-        <button style="background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;font-size:11px;padding:1px 6px;cursor:pointer">Ir</button>
-      </div>
-      <div class="win-body" style="background:#fff;padding:12px">
-        <div style="font-size:13px;font-weight:700;color:#000080;margin-bottom:8px;font-family:serif">🏠 icesmoke.dev — Proyectos</div>
-        <div style="font-size:11px;line-height:2.2;color:#000">
-          <a style="color:#000080;text-decoration:underline;cursor:pointer">🔐 SecureVault — Gestor de contraseñas cifrado</a><br>
-          <a style="color:#000080;text-decoration:underline;cursor:pointer">🤖 AutoPentest — Framework de pentesting</a><br>
-          <a style="color:#000080;text-decoration:underline;cursor:pointer">📸 NatureAI — IA para clasificar fauna</a><br>
-          <a style="color:#000080;text-decoration:underline;cursor:pointer">🌐 NetMapper — Mapas de red en tiempo real</a><br>
-          <a style="color:#000080;text-decoration:underline;cursor:pointer">📊 LogSentinel — SIEM ligero en Python</a>
-        </div>
-        <hr style="margin:10px 0;border:none;border-top:1px solid #c0c0c0">
-        <div style="font-size:10px;color:#808080">© 1995 icesmoke.dev</div>
-      </div>
-    </div>
+</div></div></div>
+    <div class="win-window" id="win-projects" style="display:none;top:75px;left:220px;width:400px"><div class="win-titlebar" onmousedown="startDrag(event,'win-projects')"><span>📁</span> Proyectos<div class="win-controls"><button class="win-btn" onclick="minimizeWin('win-projects')">_</button><button class="win-btn" onclick="closeWin('win-projects')">✕</button></div></div><div class="win-menu"><span class="win-menu-item">Archivo</span><span class="win-menu-item">Ver</span></div><div class="win-body"><div class="tech-item">🔐 <b>SecureVault</b> — Gestor contraseñas AES-256</div><div class="tech-item">🤖 <b>AutoPentest</b> — Framework pentesting</div><div class="tech-item">📸 <b>NatureAI</b> — Clasificación fauna con ML</div><div class="tech-item">🌐 <b>NetMapper</b> — Visualizador redes realtime</div><div class="tech-item">🦠 <b>MalwareDB</b> — Base de datos IoCs</div><div class="tech-item">📊 <b>LogSentinel</b> — SIEM ligero Python</div></div></div>
+    <div class="win-window" id="win-tech" style="display:none;top:95px;left:320px;width:340px"><div class="win-titlebar" onmousedown="startDrag(event,'win-tech')"><span>⚙️</span> Tecnologías<div class="win-controls"><button class="win-btn" onclick="minimizeWin('win-tech')">_</button><button class="win-btn" onclick="closeWin('win-tech')">✕</button></div></div><div class="win-body"><div style="font-weight:700;margin-bottom:5px">Lenguajes</div><div style="font-size:11px">Python</div><div class="progress-bar"><div class="progress-fill" style="width:90%"></div></div><div style="font-size:11px">JavaScript / TypeScript</div><div class="progress-bar"><div class="progress-fill" style="width:85%"></div></div><div style="font-size:11px">Bash / Shell</div><div class="progress-bar"><div class="progress-fill" style="width:82%"></div></div><div style="font-size:11px">C / C++</div><div class="progress-bar"><div class="progress-fill" style="width:60%"></div></div><div style="font-weight:700;margin:8px 0 5px">Stack</div><div class="tech-item">🐳 Docker · Kubernetes</div><div class="tech-item">🐧 Linux · Kali · Ubuntu</div><div class="tech-item">⚛️ React · Next.js · Node.js</div><div class="tech-item">🔧 Git · GitHub Actions</div></div></div>
+    <div class="win-window" id="win-contact" style="display:none;top:115px;left:430px;width:300px"><div class="win-titlebar" onmousedown="startDrag(event,'win-contact')"><span>📧</span> Contacto<div class="win-controls"><button class="win-btn" onclick="minimizeWin('win-contact')">_</button><button class="win-btn" onclick="closeWin('win-contact')">✕</button></div></div><div class="win-body"><div style="padding:5px;background:#000080;color:#fff;font-size:11px;margin-bottom:7px;text-align:center">📬 icesmoke</div><div id="win-contact-items"></div></div></div>
+    <div class="win-window" id="win-browser" style="display:none;top:50px;left:155px;width:450px"><div class="win-titlebar" onmousedown="startDrag(event,'win-browser')"><span>🌐</span> icesmoke Explorer<div class="win-controls"><button class="win-btn" onclick="minimizeWin('win-browser')">_</button><button class="win-btn" onclick="closeWin('win-browser')">✕</button></div></div><div style="background:#c0c0c0;padding:3px 5px;border-bottom:1px solid #808080;display:flex;gap:3px;align-items:center"><span style="font-size:11px">Dir:</span><div style="background:#fff;border:2px inset;flex:1;padding:1px 4px;font-size:11px;font-family:'Courier New',monospace">https://icesmoke.dev/projects</div><button style="background:#c0c0c0;border:2px solid;border-color:#fff #808080 #808080 #fff;font-size:11px;padding:1px 5px;cursor:pointer">Ir</button></div><div class="win-body" style="background:#fff;padding:10px"><div style="font-size:12px;font-weight:700;color:#000080;margin-bottom:7px;font-family:serif">🏠 icesmoke.dev</div><div style="font-size:11px;line-height:2.1;color:#000"><a style="color:#000080;text-decoration:underline;cursor:pointer">🔐 SecureVault</a><br><a style="color:#000080;text-decoration:underline;cursor:pointer">🤖 AutoPentest</a><br><a style="color:#000080;text-decoration:underline;cursor:pointer">📸 NatureAI</a><br><a style="color:#000080;text-decoration:underline;cursor:pointer">🌐 NetMapper</a><br><a style="color:#000080;text-decoration:underline;cursor:pointer">📊 LogSentinel</a></div><hr style="margin:8px 0;border:none;border-top:1px solid #c0c0c0"><div style="font-size:10px;color:#808080">© 1995 icesmoke.dev</div></div></div>
   </div>
-
   <div class="start-menu" id="start-menu">
     <div class="start-menu-side"><span style="color:#c0c0c0;font-size:9px;writing-mode:vertical-rl;transform:rotate(180deg);letter-spacing:0.15em">Windows 95</span></div>
     <div class="start-menu-items">
@@ -546,12 +238,9 @@ Combino tres mundos:
       <div class="start-menu-item" onclick="goTo('landing');toggleStart()">🚪 Volver al inicio</div>
     </div>
   </div>
-  <div class="taskbar">
-    <button class="start-btn" onclick="toggleStart()">⊞ Inicio</button>
-    <div id="taskbar-tasks" style="display:flex;gap:2px;align-items:center;flex:1;overflow:hidden"></div>
-    <div class="taskbar-time" id="win-time">00:00</div>
-  </div>
+  <div class="taskbar"><button class="start-btn" onclick="toggleStart()">⊞ Inicio</button><div id="taskbar-tasks" style="display:flex;gap:2px;align-items:center;flex:1;overflow:hidden"></div><div class="taskbar-time" id="win-time">00:00</div></div>
 </div>
+
 <script src="script.js"></script>
 </body>
 </html>
