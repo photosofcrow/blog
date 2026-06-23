@@ -1,7 +1,4 @@
-// ═══════════════════════════════════════════════════════
-//  ICESMOKE PORTFOLIO — main.js
-//  /data/site.json · /data/equipo.json · /data/fotos.json · /data/blog.json
-// ═══════════════════════════════════════════════════════
+
 'use strict';
 
 // ── Estado global ───────────────────────────────────────
