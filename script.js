@@ -1,4 +1,3 @@
-
 'use strict';
 
 // ── Estado global ───────────────────────────────────────
@@ -11,7 +10,6 @@ const state = {
   logoProg: 0, logoLine: 0, logoHtml: '', logoRAF: null,
   termTid: null, transRunning: false, iceParticles: [],
   site: null, fotos: [], blog: [],
-  // Cache de imágenes ya precargadas
   imgCache: new Map()
 };
 
@@ -24,40 +22,56 @@ async function loadJSON(path) {
   return res.json();
 }
 
-// Normaliza cualquier estructura JSON a array
 function toArray(data, key) {
   if (Array.isArray(data)) return data;
   if (data && Array.isArray(data[key])) return data[key];
-  // busca la primera propiedad que sea array
   const found = Object.values(data || {}).find(v => Array.isArray(v));
   return found || [];
 }
 
-const BASE = '/data/';
+// ── Rutas base ──
+// JSONs en:  blog/data/site.json, blog/data/fotos.json ...
+// Fotos en:  blog/fotos/montana.webp ...
+const BASE_DATA  = 'data/';
+const BASE_FOTOS = 'fotos/';
+
+// Corrige cualquier URL de foto que venga del JSON
+// Acepta: "/montana.webp", "montana.webp", "fotos/montana.webp"
+// Devuelve siempre: "fotos/montana.webp"
+function fixFotoUrl(url) {
+  if (!url) return url;
+  // Ya tiene la carpeta correcta
+  if (url.startsWith('fotos/') || url.startsWith('./fotos/')) return url;
+  // Viene con barra inicial: "/montana.webp" → "fotos/montana.webp"
+  if (url.startsWith('/')) return BASE_FOTOS + url.slice(1);
+  // Viene sin ruta: "montana.webp" → "fotos/montana.webp"
+  return BASE_FOTOS + url;
+}
 
 async function loadAllData() {
   const [site, equipo, fotosRaw, blogRaw] = await Promise.all([
-    loadJSON(BASE + 'site.json'),
-    loadJSON(BASE + 'equipo.json'),
-    loadJSON(BASE + 'fotos.json'),
-    loadJSON(BASE + 'blog.json'),
+    loadJSON(BASE_DATA + 'site.json'),
+    loadJSON(BASE_DATA + 'equipo.json'),
+    loadJSON(BASE_DATA + 'fotos.json'),
+    loadJSON(BASE_DATA + 'blog.json'),
   ]);
-  state.site         = site;
-  state.site.equipo  = Array.isArray(equipo) ? equipo : (equipo.items || []);
-  state.site.cita    = equipo.cita || '';
-  state.fotos        = toArray(fotosRaw, 'fotos');
-  state.blog         = toArray(blogRaw, 'blog');
+  state.site        = site;
+  state.site.equipo = Array.isArray(equipo) ? equipo : (equipo.items || []);
+  state.site.cita   = equipo.cita || '';
+  // Normaliza y corrige URLs de todas las fotos al cargar
+  state.fotos = toArray(fotosRaw, 'fotos').map(f => ({
+    ...f,
+    url: fixFotoUrl(f.url)
+  }));
+  state.blog = toArray(blogRaw, 'blog');
 }
 
 // ═══════════════════════════════════════════════════════
-//  PRECARGA DE IMÁGENES — carga las URLs en background
-//  para que cuando el usuario abra la galería ya estén listas
+//  PRECARGA DE IMÁGENES
 // ═══════════════════════════════════════════════════════
 function preloadImages(fotos) {
-  // Precarga en chunks para no saturar la red
   const CHUNK = 4;
   let i = 0;
-
   function loadNext() {
     const chunk = fotos.slice(i, i + CHUNK);
     if (!chunk.length) return;
@@ -66,16 +80,12 @@ function preloadImages(fotos) {
       const img = new Image();
       img.onload  = () => state.imgCache.set(foto.url, true);
       img.onerror = () => state.imgCache.set(foto.url, false);
-      // decoding async para no bloquear el hilo principal
       img.decoding = 'async';
       img.src = foto.url;
     });
     i += CHUNK;
-    // Siguiente chunk con pequeño delay para no bloquear renders
     setTimeout(loadNext, 300);
   }
-
-  // Empieza a precargar después de que el DOM haya pintado
   requestIdleCallback ? requestIdleCallback(loadNext) : setTimeout(loadNext, 500);
 }
 
@@ -143,6 +153,7 @@ if (logoTextEl) {
     }
   });
 }
+
 (function animIce() {
   requestAnimationFrame(animIce);
   if (!state.iceParticles.length) return;
@@ -191,12 +202,14 @@ function makeFlock(n, x, y, vx, vy, sz, col) {
     }))
   };
 }
+
 function drawBird(ctx, x, y, wing, sz, col) {
   ctx.beginPath();
   ctx.moveTo(x - sz, y + wing * sz * 0.55);
   ctx.quadraticCurveTo(x, y - wing * sz, x + sz, y + wing * sz * 0.55);
   ctx.strokeStyle = col; ctx.lineWidth = Math.max(0.8, sz * 0.55); ctx.lineCap = 'round'; ctx.stroke();
 }
+
 function animBirds() {
   if (!state.birdsOn) return;
   requestAnimationFrame(animBirds);
@@ -215,6 +228,7 @@ function animBirds() {
   if (Math.random() < 0.0006 && state.flocks.length < 7)
     state.flocks.push(makeFlock(2 + Math.floor(Math.random() * 4), -70, 70 + Math.random() * (birdCanvas.height * 0.38), 0.52 + Math.random() * 0.5, (Math.random() - 0.5) * 0.22, 2.2 + Math.random() * 1.6, 'rgba(18,10,4,.7)'));
 }
+
 function startBirds() {
   if (state.birdsOn) return;
   state.birdsOn = true;
@@ -249,6 +263,7 @@ function initMatrix() {
     state.matrixRAF = requestAnimationFrame(frame);
   })();
 }
+
 function stopMatrix() {
   state.matrixOn = false;
   if (state.matrixRAF) cancelAnimationFrame(state.matrixRAF);
@@ -282,7 +297,9 @@ function initNet() {
   }, 600);
   state.netOn = true; animNet();
 }
+
 function stopNet() { state.netOn = false; if (state.netRAF) cancelAnimationFrame(state.netRAF); }
+
 function animNet() {
   if (!state.netOn) return;
   netCtx.clearRect(0, 0, netCanvas.width, netCanvas.height);
@@ -483,6 +500,7 @@ function runTransition(targetName, callback) {
       transCtx.beginPath(); transCtx.arc(tx+sw,cH+16,3.5,0,Math.PI*2); transCtx.fillStyle='rgba(180,20,20,0.95)'; transCtx.fill();
     }
   }
+
   (function frame() {
     transCtx.clearRect(0, 0, transCanvas.width, transCanvas.height); timer++;
     if (phase === 0) {
@@ -574,6 +592,7 @@ function updateTaskbar() {
   });
 }
 setInterval(updateTaskbar, 600);
+
 function toggleStart() { document.getElementById('start-menu').classList.toggle('visible'); }
 document.addEventListener('click', e => { if (!e.target.closest('.start-btn') && !e.target.closest('.start-menu')) document.getElementById('start-menu').classList.remove('visible'); });
 function updateWinTime() { const t=document.getElementById('win-time');if(!t)return;const d=new Date();t.textContent=d.getHours().toString().padStart(2,'0')+':'+d.getMinutes().toString().padStart(2,'0'); }
@@ -589,6 +608,7 @@ const POLAROID_DATA = [
   { emoji:'🌲', label:'Bosque · Cuenca',   color:'#0a1a0a,#1a3a1a', rot: 9, top:35, left:310, w:115 },
   { emoji:'🦋', label:'Macro · Primavera', color:'#1a0a2a,#3a1a5a', rot:-6, top:15, left:420, w:108 },
 ];
+
 function renderPolaroids() {
   const area = document.getElementById('polaroids-area'); if (!area) return;
   POLAROID_DATA.forEach(p => {
@@ -605,6 +625,7 @@ function renderPolaroids() {
 // ═══════════════════════════════════════════════════════
 function renderSite() {
   const d = state.site;
+  if (!d) return; // Protección: no renderizar si no cargaron los datos
   const $  = id => document.getElementById(id);
   const set = (id, val, prop='textContent') => { const el=$(id); if(el) el[prop]=val; };
 
@@ -617,25 +638,25 @@ function renderSite() {
   set('footer-tagline', d.tagline);
 
   const skillsEl = $('site-skills');
-  if (skillsEl) skillsEl.innerHTML = d.skills.map(s => `<span class="skill-tag">${s}</span>`).join('');
+  if (skillsEl) skillsEl.innerHTML = (d.skills||[]).map(s => `<span class="skill-tag">${s}</span>`).join('');
 
   const statsEl = $('site-stats');
-  if (statsEl) statsEl.innerHTML = d.stats.map(s => `<div class="stat"><div class="stat-num">${s.num}</div><div class="stat-label">${s.label}</div></div>`).join('');
+  if (statsEl) statsEl.innerHTML = (d.stats||[]).map(s => `<div class="stat"><div class="stat-num">${s.num}</div><div class="stat-label">${s.label}</div></div>`).join('');
 
-  set('portal-photo-desc', d.portales.foto);
-  set('portal-cyber-desc', d.portales.cyber);
-  set('portal-code-desc',  d.portales.code);
+  set('portal-photo-desc', d.portales?.foto  || '');
+  set('portal-cyber-desc', d.portales?.cyber || '');
+  set('portal-code-desc',  d.portales?.code  || '');
 
   const gear = $('photo-gear');
   if (gear) gear.innerHTML = (d.equipo||[]).map(g => `<span class="notice-tag">${g}</span>`).join('');
 
-  set('photo-quote', `"${d.cita}"`);
+  set('photo-quote', d.cita ? `"${d.cita}"` : '');
 
   const contactEl = $('win-contact-items');
   if (contactEl) contactEl.innerHTML = (d.contacto||[]).map(c => `<div class="tech-item">${c.icono} ${c.texto}</div>`).join('');
 }
 
-// ── Paleta ──
+// ── Paleta de categorías ──
 const CAT_PALETTE = {
   Fauna:   { bg:'linear-gradient(135deg,#1a2e0a,#3d5a28)', accent:'#5aaa38' },
   Paisaje: { bg:'linear-gradient(135deg,#0a1a2a,#1a3a5a)', accent:'#3a8aaa' },
@@ -649,20 +670,6 @@ function getCatStyle(cat) {
   return CAT_PALETTE[cat];
 }
 function getCategories() { return ['Todas', ...new Set(state.fotos.map(f => f.categoria))]; }
-
-// ── Imagen con fallback ──
-function imgTag(foto, style = '') {
-  if (!foto.url) return `<span style="position:relative;z-index:1;font-size:3rem">${foto.emoji||'📷'}</span>`;
-  const col = getCatStyle(foto.categoria);
-  return `<img
-    src="${foto.url}"
-    alt="${foto.nombre}"
-    loading="lazy"
-    decoding="async"
-    fetchpriority="low"
-    style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;${style}"
-    onerror="this.style.display='none'">`;
-}
 
 // ── Landing strip ──
 function renderLandingStrip() {
@@ -715,7 +722,6 @@ function renderPhotoGallery() {
     return;
   }
 
-  // IntersectionObserver para lazy-load real
   galleryObserver = new IntersectionObserver((entries, obs) => {
     entries.forEach(e => {
       if (!e.isIntersecting) return;
@@ -723,12 +729,11 @@ function renderPhotoGallery() {
       if (img) {
         img.src = img.dataset.src;
         img.removeAttribute('data-src');
-        // Fade-in suave al cargar
         img.onload = () => { img.style.opacity = '1'; };
       }
       obs.unobserve(e.target);
     });
-  }, { rootMargin: '200px' }); // 200px antes de entrar en viewport
+  }, { rootMargin: '200px' });
 
   const frag = document.createDocumentFragment();
   fotos.forEach(foto => {
@@ -806,7 +811,10 @@ async function initSite() {
     await loadAllData();
   } catch (err) {
     console.error('[icesmoke] Error cargando JSON:', err);
-    // Muestra aviso en consola pero no rompe el resto de la UI
+    // Si falla la carga, inicializa site con valores vacíos para no romper el render
+    if (!state.site) {
+      state.site = { nombre:'icesmoke', bio:'', tagline:'', skills:[], stats:[], portales:{foto:'',cyber:'',code:''}, equipo:[], contacto:[], cita:'' };
+    }
   }
   renderSite();
   renderBlog();
@@ -814,7 +822,6 @@ async function initSite() {
   buildPhotoFilters();
   renderPhotoGallery();
   renderPolaroids();
-  // Precarga en background tras el primer render
   preloadImages(state.fotos);
 }
 
