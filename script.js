@@ -98,6 +98,9 @@ const transCtx  = transCanvas.getContext('2d');
 const netCtx    = netCanvas.getContext('2d');
 const logoCtx   = logoCanvas.getContext('2d');
 
+const transOverlay = document.getElementById('trans-overlay');
+const transLabel   = document.getElementById('trans-label');
+
 function resizeAllCanvases() {
   [bgCanvas, birdCanvas, matrixCanvas, transCanvas].forEach(c => {
     c.width = innerWidth; c.height = innerHeight;
@@ -571,7 +574,6 @@ function runTransition(targetName, callback) {
   transOverlay.style.pointerEvents = 'all';
 
   // Ocultar label (no lo usamos en la transición de humo)
-  const transLabel = document.getElementById('trans-label');
   if (transLabel) transLabel.style.color = 'rgba(255,255,255,0)';
 
   spawnSmoke(W, H);
