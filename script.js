@@ -40,11 +40,13 @@ const BASE_FOTOS = 'https://photosofcrow.github.io/blog/fotos/';
 // Devuelve siempre: "fotos/montana.webp"
 function fixFotoUrl(url) {
   if (!url) return url;
+  // URL absoluta — no tocar
+  if (url.startsWith('http://') || url.startsWith('https://')) return url;
   // Ya tiene la carpeta correcta
   if (url.startsWith('fotos/') || url.startsWith('./fotos/')) return url;
-  // Viene con barra inicial: "/montana.webp" → "fotos/montana.webp"
+  // Viene con barra inicial: "/montana.jpeg" → "fotos/montana.jpeg"
   if (url.startsWith('/')) return BASE_FOTOS + url.slice(1);
-  // Viene sin ruta: "montana.webp" → "fotos/montana.webp"
+  // Viene sin ruta: "montana.jpeg" → "fotos/montana.jpeg"
   return BASE_FOTOS + url;
 }
 
