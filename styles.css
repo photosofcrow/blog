@@ -434,6 +434,26 @@ canvas { position: absolute; top: 0; left: 0; pointer-events: none; }
 .portal-arrow { margin-left: auto; color: var(--red); font-size: 1rem; flex-shrink: 0; transition: transform .3s; }
 .portal:hover .portal-arrow { transform: translateX(4px); }
 
+/* Portal más reciente */
+.portal--recent {
+  border-color: rgba(204,0,0,.55);
+  background: linear-gradient(135deg, var(--blk2) 0%, rgba(139,0,0,.08) 100%);
+}
+.portal--recent::before { background: var(--red-b); width: 4px; }
+
+/* Badge "Actualizado" */
+.portal-updated-badge {
+  display: inline-block;
+  font-size: .5rem; letter-spacing: .14em; text-transform: uppercase;
+  color: var(--red-b); font-weight: 700;
+  margin-left: .5rem; vertical-align: middle;
+  animation: badge-pulse 2.5s ease-in-out infinite;
+}
+@keyframes badge-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: .45; }
+}
+
 /* Blog (landing) */
 .blog-band { padding: 1.4rem 2.5rem 0; background: var(--blk); }
 .blog-inner { max-width: 1100px; margin: 0 auto; }
