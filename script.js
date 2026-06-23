@@ -33,7 +33,7 @@ function toArray(data, key) {
   return found || [];
 }
 
-const BASE = '/blog/data/';
+const BASE = '/data/';
 
 async function loadAllData() {
   const [site, equipo, fotosRaw, blogRaw] = await Promise.all([
