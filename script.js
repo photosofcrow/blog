@@ -979,6 +979,7 @@ function openPhotoModal(idx) {
       </div>
     </div>`;
 
+  modal.style.display = 'flex';  // sobreescribe cualquier display:none inline del HTML
   modal.classList.add('open');
 
   // Eventos — reasignar cada vez
@@ -999,7 +1000,9 @@ function photoModalNav(dir) {
 
 function closePhotoModal() {
   const modal = document.getElementById('photo-modal');
-  if (modal) modal.classList.remove('open');
+  if (!modal) return;
+  modal.classList.remove('open');
+  modal.style.display = 'none';
 }
 
 document.addEventListener('keydown', e => {
