@@ -32,7 +32,7 @@ function toArray(data, key) {
 // ── Rutas base ──
 // JSONs en:  blog/data/site.json, blog/data/fotos.json ...
 // Fotos en:  blog/fotos/montana.webp ...
-const BASE_DATA = 'https://photosofcrow.github.io/blog/data/';
+const BASE_DATA  = 'https://photosofcrow.github.io/blog/data/';
 const BASE_FOTOS = 'https://photosofcrow.github.io/blog/fotos/';
 
 // Corrige cualquier URL de foto que venga del JSON
