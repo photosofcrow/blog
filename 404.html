@@ -1,0 +1,23 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <title>icesmoke</title>
+  <script>
+    // Técnica estándar para SPAs en GitHub Pages
+    // Guardamos la ruta completa como parámetro ?p= y redirigimos al index
+    // El index.html la lee al arrancar y navega al destino correcto
+    var path = window.location.pathname;
+    var search = window.location.search;
+    var hash = window.location.hash;
+ 
+    // Solo interceptar rutas dentro de /blog/
+    if (path.indexOf('/blog') === 0) {
+      var newUrl = '/blog/?p=' + encodeURIComponent(path + search + hash);
+      window.location.replace(newUrl);
+    }
+  </script>
+</head>
+<body></body>
+</html>
+ 
