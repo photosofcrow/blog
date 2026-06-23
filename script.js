@@ -933,12 +933,13 @@ function renderPhotoGallery() {
       : `<span style="position:relative;z-index:1;font-size:3rem">${foto.emoji||'📷'}</span>`;
 
     card.innerHTML = `
-      <div class="rural-card-img" style="aspect-ratio:4/3;background:${col.bg};position:relative">${imgHtml}</div>
-      <span class="rural-card-badge">${foto.categoria}</span>
-      <div class="rural-card-info">
-        <span class="rural-card-cat">${foto.categoria}</span>
-        <h3>${foto.nombre}</h3>
-        <p>${(foto.temas_relacionados||[]).slice(0,3).join(' · ')}</p>
+      <div class="rural-card-img" style="aspect-ratio:4/3;background:${col.bg};position:relative;overflow:hidden">
+        ${imgHtml}
+        <div class="rural-card-info">
+          <span style="font-size:.52rem;letter-spacing:.2em;text-transform:uppercase;color:${col.accent};display:block;margin-bottom:.2rem">${foto.categoria}</span>
+          <h3>${foto.nombre}</h3>
+          <p>${(foto.temas_relacionados||[]).slice(0,3).join(' · ')}</p>
+        </div>
       </div>`;
 
     frag.appendChild(card);
@@ -949,35 +950,51 @@ function renderPhotoGallery() {
 }
 
 // ── Modal foto con navegación prev/next ──
+// Construye el contenido del modal dinámicamente para no depender de IDs fijos en el HTML
 function openPhotoModal(idx) {
   currentPhotoIdx = idx;
   const foto = currentPhotoList[idx];
   if (!foto) return;
 
-  const col      = getCatStyle(foto.categoria);
-  const modalImg = document.getElementById('photo-modal-img');
-  if (modalImg) {
-    modalImg.style.background = col.bg;
-    modalImg.innerHTML = foto.url
-      ? `<img src="${foto.url}" alt="${foto.nombre}" decoding="async" style="width:100%;height:100%;object-fit:cover" onerror="this.style.display='none'">`
-      : `<span style="font-size:5rem">${foto.emoji||'📷'}</span>`;
-  }
-
-  const catEl  = document.getElementById('photo-modal-cat');
-  const nameEl = document.getElementById('photo-modal-name');
-  const descEl = document.getElementById('photo-modal-desc');
-  const tagsEl = document.getElementById('photo-modal-tags');
-  const ctrEl  = document.getElementById('photo-modal-counter');
-
-  if (catEl)  catEl.textContent  = foto.categoria;
-  if (nameEl) nameEl.textContent = foto.nombre;
-  if (descEl) descEl.textContent = foto.descripcion || '';
-  if (tagsEl) tagsEl.innerHTML   = (foto.temas_relacionados||[]).map(t =>
-    `<span class="photo-tag">#${t}</span>`).join('');
-  if (ctrEl)  ctrEl.textContent  = `${idx + 1} / ${currentPhotoList.length}`;
-
+  const col   = getCatStyle(foto.categoria);
   const modal = document.getElementById('photo-modal');
-  if (modal) modal.classList.add('open');
+  if (!modal) return;
+
+  const hasPrev = idx > 0;
+  const hasNext = idx < currentPhotoList.length - 1;
+  const tags    = (foto.temas_relacionados||[]).map(t => `<span class="photo-tag">#${t}</span>`).join('');
+  const imgHtml = foto.url
+    ? `<img src="${foto.url}" alt="${foto.nombre}" decoding="async"
+        style="width:100%;height:100%;object-fit:contain;max-height:70vh;display:block"
+        onerror="this.style.display='none'">`
+    : `<span style="font-size:6rem">${foto.emoji||'📷'}</span>`;
+
+  modal.innerHTML = `
+    <div class="pm-inner" onclick="event.stopPropagation()">
+
+      <!-- Barra superior -->
+      <div class="pm-bar">
+        <span class="pm-counter">${idx + 1} / ${currentPhotoList.length}</span>
+        <button class="pm-close" onclick="closePhotoModal()">✕</button>
+      </div>
+
+      <!-- Imagen -->
+      <div class="pm-img" style="background:${col.bg}">${imgHtml}</div>
+
+      <!-- Navegación -->
+      <button class="pm-nav pm-prev" onclick="photoModalNav(-1)" ${hasPrev ? '' : 'disabled'}>‹</button>
+      <button class="pm-nav pm-next" onclick="photoModalNav(1)"  ${hasNext ? '' : 'disabled'}>›</button>
+
+      <!-- Info -->
+      <div class="pm-footer">
+        <div class="pm-cat">${foto.categoria}</div>
+        <div class="pm-name">${foto.nombre}</div>
+        ${foto.descripcion ? `<div class="pm-desc">${foto.descripcion}</div>` : ''}
+        ${tags ? `<div class="pm-tags">${tags}</div>` : ''}
+      </div>
+    </div>`;
+
+  modal.classList.add('open');
 }
 
 function photoModalNav(dir) {
