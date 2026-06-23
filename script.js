@@ -14,12 +14,32 @@ const state = {
 };
 
 // ═══════════════════════════════════════════════════════
-//  FETCH — carga defensiva de JSON
+//  FETCH — con caché sessionStorage y carga lazy
 // ═══════════════════════════════════════════════════════
+const BASE_DATA  = 'https://photosofcrow.github.io/blog/data/';
+const BASE_FOTOS = 'https://photosofcrow.github.io/blog/fotos/';
+const CACHE_TTL  = 5 * 60 * 1000; // 5 minutos
+
 async function loadJSON(path) {
+  // Intentar leer de sessionStorage
+  try {
+    const cached = sessionStorage.getItem('ice:' + path);
+    if (cached) {
+      const { ts, data } = JSON.parse(cached);
+      if (Date.now() - ts < CACHE_TTL) return data;
+    }
+  } catch (_) {}
+
   const res = await fetch(path);
-  if (!res.ok) throw new Error(`No se pudo cargar ${path} (${res.status})`);
-  return res.json();
+  if (!res.ok) throw new Error(`HTTP ${res.status} — ${path}`);
+  const data = await res.json();
+
+  // Guardar en caché
+  try {
+    sessionStorage.setItem('ice:' + path, JSON.stringify({ ts: Date.now(), data }));
+  } catch (_) {}
+
+  return data;
 }
 
 function toArray(data, key) {
@@ -29,9 +49,6 @@ function toArray(data, key) {
   return found || [];
 }
 
-const BASE_DATA  = 'https://photosofcrow.github.io/blog/data/';
-const BASE_FOTOS = 'https://photosofcrow.github.io/blog/fotos/';
-
 function fixFotoUrl(url) {
   if (!url) return url;
   if (url.startsWith('http://') || url.startsWith('https://')) return url;
@@ -40,18 +57,34 @@ function fixFotoUrl(url) {
   return BASE_FOTOS + url;
 }
 
+// Carga mínima al inicio: solo site + equipo (necesarios para el landing)
+// fotos y blog se cargan en paralelo pero no bloquean el render inicial
 async function loadAllData() {
-  const [site, equipo, fotosRaw, blogRaw] = await Promise.all([
+  // Críticos: site y equipo — necesarios para renderizar el landing
+  const [site, equipo] = await Promise.all([
     loadJSON(BASE_DATA + 'site.json'),
     loadJSON(BASE_DATA + 'equipo.json'),
-    loadJSON(BASE_DATA + 'fotos.json'),
-    loadJSON(BASE_DATA + 'blog.json'),
   ]);
   state.site        = site;
   state.site.equipo = Array.isArray(equipo) ? equipo : (equipo.items || []);
   state.site.cita   = equipo.cita || '';
-  state.fotos = toArray(fotosRaw, 'fotos').map(f => ({ ...f, url: fixFotoUrl(f.url) }));
-  state.blog  = toArray(blogRaw, 'blog');
+
+  // No críticos: fotos y blog — los cargamos sin bloquear
+  // Se resuelven en paralelo pero el landing ya se pinta antes
+  Promise.all([
+    loadJSON(BASE_DATA + 'fotos.json').then(raw => {
+      state.fotos = toArray(raw, 'fotos').map(f => ({ ...f, url: fixFotoUrl(f.url) }));
+      // Re-renderizar lo que depende de fotos una vez disponibles
+      renderLandingStrip();
+      buildPhotoFilters();
+      renderPhotoGallery();
+      preloadImages(state.fotos);
+    }),
+    loadJSON(BASE_DATA + 'blog.json').then(raw => {
+      state.blog = toArray(raw, 'blog');
+      renderBlog();
+    }),
+  ]).catch(err => console.warn('[icesmoke] Error cargando datos secundarios:', err));
 }
 
 // ═══════════════════════════════════════════════════════
@@ -672,6 +705,7 @@ function goTo(t, opts = {}) {
 
   runTransition(t, () => {
     if (state.currentSection === 'cyber') { stopMatrix(); stopNet(); }
+    if (state.currentSection === 'win95') { stopWin95Intervals(); }
     if (state.currentSection === 'photo') {
       stopBirds();
       const ps = document.getElementById('photo-section');
@@ -690,7 +724,7 @@ function goTo(t, opts = {}) {
         if (ps) ps.addEventListener('scroll', onPhotoScroll);
         setTimeout(startBirds, 700);
       }
-      if (t === 'win95') updateWinTime();
+      if (t === 'win95') { updateWinTime(); startWin95Intervals(); }
     }
     state.currentSection = t;
     // Actualizar URL sin recargar
@@ -786,7 +820,18 @@ function updateTaskbar() {
     }
   });
 }
-setInterval(updateTaskbar, 600);
+// Solo correr el intervalo cuando Win95 está activo
+let taskbarInterval = null;
+let winTimeInterval = null;
+
+function startWin95Intervals() {
+  if (!taskbarInterval) taskbarInterval = setInterval(updateTaskbar, 600);
+  if (!winTimeInterval) winTimeInterval = // updateWinTime interval ahora gestionado por startWin95Intervals()
+}
+function stopWin95Intervals() {
+  clearInterval(taskbarInterval); taskbarInterval = null;
+  clearInterval(winTimeInterval); winTimeInterval = null;
+}
 
 function toggleStart() {
   document.getElementById('start-menu').classList.toggle('visible');
@@ -802,7 +847,7 @@ function updateWinTime() {
   const d = new Date();
   t.textContent = d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
 }
-setInterval(updateWinTime, 15000);
+// updateWinTime interval ahora gestionado por startWin95Intervals()
 
 // ═══════════════════════════════════════════════════════
 //  POLAROIDS
@@ -917,7 +962,7 @@ function renderLandingStrip() {
       const num = String(i + 1).padStart(3, '0');
       const imgHtml = foto.url
         ? `<img src="${foto.url}" alt="${foto.nombre}" loading="lazy" decoding="async"
-             onerror="this.style.display='none'">`
+             onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<div class=film-frame-placeholder style=height:130px>📷</div>')">`
         : `<div class="film-frame-placeholder">${foto.emoji||'📷'}</div>`;
       frames += `
         <div class="film-frame" data-idx="${i}" title="${foto.nombre}">
@@ -1140,9 +1185,13 @@ document.addEventListener('keydown', e => {
 });
 
 // ── Blog ──
+let _blogRendered = false;
 function renderBlog() {
+  if (_blogRendered && !state.blog.length) return; // nada que renderizar
   const blogGrid = document.getElementById('blog-grid');
   if (!blogGrid) return;
+  if (_blogRendered && blogGrid.children.length === state.blog.length) return; // ya está
+  _blogRendered = true;
   blogGrid.innerHTML = state.blog.map((b, i) => `
     <div class="blog-item" onclick="openBlog(${i})">
       <span class="blog-cat">${b.cat}</span>
@@ -1181,30 +1230,81 @@ if (blogModalEl) {
 }
 
 // ═══════════════════════════════════════════════════════
+//  UTILIDADES DE UI
+// ═══════════════════════════════════════════════════════
+
+// Banner de error no intrusivo
+function showLoadError(msg) {
+  if (document.getElementById('ice-error-banner')) return;
+  const b = document.createElement('div');
+  b.id = 'ice-error-banner';
+  b.style.cssText = [
+    'position:fixed', 'bottom:1rem', 'left:50%', 'transform:translateX(-50%)',
+    'background:#1a0000', 'border:1px solid #cc0000', 'color:#ff8080',
+    'font-size:.7rem', 'letter-spacing:.1em', 'padding:.55rem 1.2rem',
+    'border-radius:2px', 'z-index:99000', 'font-family:monospace',
+    'display:flex', 'align-items:center', 'gap:.75rem',
+    'box-shadow:0 4px 20px rgba(204,0,0,.25)',
+  ].join(';');
+  b.innerHTML = `⚠ ${msg} <button onclick="this.parentElement.remove()" style="background:none;border:none;color:#ff8080;cursor:pointer;font-size:1rem;line-height:1;padding:0">✕</button>`;
+  document.body.appendChild(b);
+  setTimeout(() => b.remove(), 8000);
+}
+
+// ═══════════════════════════════════════════════════════
 //  ARRANQUE
 // ═══════════════════════════════════════════════════════
 async function initSite() {
   try {
     await loadAllData();
   } catch (err) {
-    console.error('[icesmoke] Error cargando JSON:', err);
+    console.error('[icesmoke] Error cargando datos críticos:', err);
     if (!state.site) {
       state.site = {
         nombre:'icesmoke', bio:'', tagline:'', skills:[], stats:[],
         portales:{ foto:'', cyber:'', code:'' }, equipo:[], contacto:[], cita:''
       };
     }
+    // Mostrar aviso no intrusivo — banner en la parte inferior
+    showLoadError('No se pudieron cargar algunos datos. Comprueba tu conexión.');
   }
+  // Solo renderizar lo que depende de site.json (ya cargado)
   renderSite();
-  renderBlog();
-  renderLandingStrip();
-  buildPhotoFilters();
-  renderPhotoGallery();
   renderPolaroids();
-  preloadImages(state.fotos);
+  // fotos y blog se renderizan solos cuando sus JSONs llegan (ver loadAllData)
+  // Mostrar placeholders mientras cargan
+  renderLandingStripPlaceholder();
 
   // Router: leer URL actual y navegar al destino correcto
   handleInitialRoute();
+}
+
+// Placeholder del filmstrip mientras carga
+function renderLandingStripPlaceholder() {
+  const wrap = document.getElementById('landing-photo-strip');
+  if (!wrap || state.fotos.length) return; // ya hay datos, no mostrar placeholder
+
+  const holeCount = 20;
+  function holesRow(n) {
+    let h = '<div class="film-holes-row">';
+    for (let i = 0; i < n; i++) h += '<div class="film-hole"></div>';
+    return h + '</div>';
+  }
+  let frames = '';
+  for (let i = 0; i < 8; i++) {
+    frames += `<div class="film-frame film-frame--loading">
+      <span class="film-frame-num">${String(i+1).padStart(3,'0')}</span>
+      <div class="film-frame-placeholder film-skeleton"></div>
+      <div class="film-frame-label"><span class="film-skeleton" style="width:60%;height:8px;border-radius:2px;display:block"></span></div>
+    </div>`;
+  }
+  wrap.innerHTML = `
+    <div class="film-roll-num">ICESMOKE · ROLL 01 · 35mm</div>
+    <div class="film-track">
+      ${holesRow(holeCount)}
+      <div class="film-frames-row">${frames}</div>
+      ${holesRow(holeCount)}
+    </div>`;
 }
 
 function handleInitialRoute() {
