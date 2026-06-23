@@ -20,6 +20,63 @@ const BASE_DATA  = 'https://photosofcrow.github.io/blog/data/';
 const BASE_FOTOS = 'https://photosofcrow.github.io/blog/fotos/';
 const CACHE_TTL  = 5 * 60 * 1000; // 5 minutos
 
+// ── Last-Modified de cada JSON via HEAD request ──
+// Devuelve timestamp ms o 0 si falla
+async function fetchLastModified(path) {
+  try {
+    const cacheKey = 'ice:lm:' + path;
+    const cached   = sessionStorage.getItem(cacheKey);
+    if (cached) {
+      const { ts, lm } = JSON.parse(cached);
+      if (Date.now() - ts < CACHE_TTL) return lm;
+    }
+    const res = await fetch(path, { method: 'HEAD' });
+    const lm  = res.ok ? new Date(res.headers.get('Last-Modified') || 0).getTime() : 0;
+    sessionStorage.setItem(cacheKey, JSON.stringify({ ts: Date.now(), lm }));
+    return lm;
+  } catch (_) { return 0; }
+}
+
+// Obtiene timestamps de fotos.json y blog.json en paralelo
+// Guarda en state.lastModified = { photo: ms, blog: ms, cyber: ms }
+async function loadLastModified() {
+  const [photoLM, blogLM] = await Promise.all([
+    fetchLastModified(BASE_DATA + 'fotos.json'),
+    fetchLastModified(BASE_DATA + 'blog.json'),
+  ]);
+  // cyber no tiene JSON propio — usamos site.json como referencia
+  const cyberLM = await fetchLastModified(BASE_DATA + 'site.json');
+  state.lastModified = { photo: photoLM, blog: blogLM, cyber: cyberLM };
+}
+
+// Devuelve los portales ordenados por más reciente primero
+// Cada portal: { key, ico, title, desc, section, lm }
+function getSortedPortals() {
+  const lm  = state.lastModified || { photo: 0, blog: 0, cyber: 0 };
+  const d   = state.site;
+  const portals = [
+    { key:'photo', ico:'🌿', title:'Fotografía',    desc: d?.portales?.foto  || '', section:'photo', lm: lm.photo },
+    { key:'cyber', ico:'⬡',  title:'Ciberseguridad',desc: d?.portales?.cyber || '', section:'cyber', lm: lm.cyber, icoColor:'var(--green)' },
+    { key:'code',  ico:'🖥️', title:'Programación',  desc: d?.portales?.code  || '', section:'win95', lm: lm.cyber },
+  ];
+  // Ordenar por lm descendente (más reciente primero)
+  return portals.sort((a, b) => b.lm - a.lm);
+}
+
+// Formatea tiempo relativo: "hace 2 días", "hace 3 horas"
+function timeAgo(ms) {
+  if (!ms) return '';
+  const diff = Date.now() - ms;
+  const mins  = Math.floor(diff / 60000);
+  const hours = Math.floor(diff / 3600000);
+  const days  = Math.floor(diff / 86400000);
+  if (mins  < 60)  return `hace ${mins} min`;
+  if (hours < 24)  return `hace ${hours}h`;
+  if (days  < 7)   return `hace ${days}d`;
+  if (days  < 30)  return `hace ${Math.floor(days/7)}sem`;
+  return `hace ${Math.floor(days/30)}mes`;
+}
+
 async function loadJSON(path) {
   // Intentar leer de sessionStorage
   try {
@@ -69,12 +126,10 @@ async function loadAllData() {
   state.site.equipo = Array.isArray(equipo) ? equipo : (equipo.items || []);
   state.site.cita   = equipo.cita || '';
 
-  // No críticos: fotos y blog — los cargamos sin bloquear
-  // Se resuelven en paralelo pero el landing ya se pinta antes
+  // No críticos: fotos, blog y timestamps — sin bloquear el render inicial
   Promise.all([
     loadJSON(BASE_DATA + 'fotos.json').then(raw => {
       state.fotos = toArray(raw, 'fotos').map(f => ({ ...f, url: fixFotoUrl(f.url) }));
-      // Re-renderizar lo que depende de fotos una vez disponibles
       renderLandingStrip();
       buildPhotoFilters();
       renderPhotoGallery();
@@ -84,6 +139,8 @@ async function loadAllData() {
       state.blog = toArray(raw, 'blog');
       renderBlog();
     }),
+    // Last-Modified: HEAD requests ligeros, re-ordena portales cuando llegan
+    loadLastModified().then(() => renderPortals()),
   ]).catch(err => console.warn('[icesmoke] Error cargando datos secundarios:', err));
 }
 
@@ -826,7 +883,7 @@ let winTimeInterval = null;
 
 function startWin95Intervals() {
   if (!taskbarInterval) taskbarInterval = setInterval(updateTaskbar, 600);
-  if (!winTimeInterval) winTimeInterval = // updateWinTime interval ahora gestionado por startWin95Intervals()
+  if (!winTimeInterval) winTimeInterval = setInterval(updateWinTime, 15000);
 }
 function stopWin95Intervals() {
   clearInterval(taskbarInterval); taskbarInterval = null;
@@ -902,9 +959,8 @@ function renderSite() {
     `<div class="stat"><div class="stat-num">${s.num}</div><div class="stat-label">${s.label}</div></div>`
   ).join('');
 
-  set('portal-photo-desc', d.portales?.foto  || '');
-  set('portal-cyber-desc', d.portales?.cyber || '');
-  set('portal-code-desc',  d.portales?.code  || '');
+  // Los portales se renderizan por separado con orden dinámico
+  renderPortals();
 
   const gear = $('photo-gear');
   if (gear) gear.innerHTML = (d.equipo || []).map(g => `<span class="notice-tag">${g}</span>`).join('');
@@ -915,6 +971,33 @@ function renderSite() {
   if (contactEl) contactEl.innerHTML = (d.contacto || []).map(c =>
     `<div class="tech-item">${c.icono} ${c.texto}</div>`
   ).join('');
+}
+
+// ── Portales ordenados por Last-Modified ──
+function renderPortals() {
+  const container = document.getElementById('portals-container');
+  if (!container) return;
+
+  const sorted  = getSortedPortals();
+  const mostRecent = sorted[0]?.key;
+
+  container.innerHTML = sorted.map(p => {
+    const isNew   = p.key === mostRecent && p.lm > 0;
+    const ago     = timeAgo(p.lm);
+    const badge   = isNew
+      ? `<span class="portal-updated-badge">● Actualizado${ago ? ' ' + ago : ''}</span>`
+      : '';
+
+    return `
+      <div class="portal${isNew ? ' portal--recent' : ''}" onclick="goTo('${p.section}')">
+        <div class="portal-ico"${p.icoColor ? ` style="color:${p.icoColor}"` : ''}>${p.ico}</div>
+        <div class="portal-txt">
+          <h3>${p.title}${badge}</h3>
+          <p>${p.desc}</p>
+        </div>
+        <div class="portal-arrow">›</div>
+      </div>`;
+  }).join('');
 }
 
 // ── Paleta de categorías ──
