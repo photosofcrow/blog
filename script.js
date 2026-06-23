@@ -895,7 +895,6 @@ let currentPhotoIdx  = 0;
 function renderPhotoGallery() {
   const grid = document.getElementById('photo-gallery-grid');
   if (!grid) return;
-  if (galleryObserver) galleryObserver.disconnect();
 
   const fotos = state.activeFilter === 'Todas'
     ? state.fotos
@@ -908,28 +907,17 @@ function renderPhotoGallery() {
     return;
   }
 
-  galleryObserver = new IntersectionObserver((entries, obs) => {
-    entries.forEach(e => {
-      if (!e.isIntersecting) return;
-      const img = e.target.querySelector('img[data-src]');
-      if (img) {
-        img.src = img.dataset.src;
-        img.removeAttribute('data-src');
-        img.onload = () => { img.style.opacity = '1'; };
-      }
-      obs.unobserve(e.target);
-    });
-  }, { rootMargin: '200px' });
+  grid.innerHTML = '';
 
-  const frag = document.createDocumentFragment();
   fotos.forEach((foto, idx) => {
     const col  = getCatStyle(foto.categoria);
     const card = document.createElement('div');
     card.className = 'rural-card';
-    card.onclick   = () => openPhotoModal(idx);
 
     const imgHtml = foto.url
-      ? `<img data-src="${foto.url}" alt="${foto.nombre}" decoding="async" style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;opacity:0;transition:opacity .4s" onerror="this.style.display='none'">`
+      ? `<img src="${foto.url}" alt="${foto.nombre}" loading="lazy" decoding="async"
+           style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;display:block;transition:transform .4s"
+           onerror="this.style.display='none'">`
       : `<span style="position:relative;z-index:1;font-size:3rem">${foto.emoji||'📷'}</span>`;
 
     card.innerHTML = `
@@ -942,50 +930,47 @@ function renderPhotoGallery() {
         </div>
       </div>`;
 
-    frag.appendChild(card);
-    galleryObserver.observe(card);
+    card.addEventListener('click', () => openPhotoModal(idx));
+    grid.appendChild(card);
   });
-  grid.innerHTML = '';
-  grid.appendChild(frag);
 }
 
-// ── Modal foto con navegación prev/next ──
-// Construye el contenido del modal dinámicamente para no depender de IDs fijos en el HTML
+// ── Modal foto pantalla completa con nav ──
 function openPhotoModal(idx) {
   currentPhotoIdx = idx;
   const foto = currentPhotoList[idx];
   if (!foto) return;
 
-  const col   = getCatStyle(foto.categoria);
-  const modal = document.getElementById('photo-modal');
-  if (!modal) return;
+  // Buscar o crear el modal
+  let modal = document.getElementById('photo-modal');
+  if (!modal) {
+    modal = document.createElement('div');
+    modal.id = 'photo-modal';
+    document.body.appendChild(modal);
+  }
 
+  const col     = getCatStyle(foto.categoria);
   const hasPrev = idx > 0;
   const hasNext = idx < currentPhotoList.length - 1;
   const tags    = (foto.temas_relacionados||[]).map(t => `<span class="photo-tag">#${t}</span>`).join('');
-  const imgHtml = foto.url
+
+  const imgContent = foto.url
     ? `<img src="${foto.url}" alt="${foto.nombre}" decoding="async"
-        style="width:100%;height:100%;object-fit:contain;max-height:70vh;display:block"
-        onerror="this.style.display='none'">`
-    : `<span style="font-size:6rem">${foto.emoji||'📷'}</span>`;
+        style="max-width:100%;max-height:70vh;object-fit:contain;display:block;margin:0 auto"
+        onerror="this.outerHTML='<span style=\'font-size:5rem\'>${foto.emoji||'📷'}</span>'">`
+    : `<span style="font-size:5rem">${foto.emoji||'📷'}</span>`;
 
   modal.innerHTML = `
-    <div class="pm-inner" onclick="event.stopPropagation()">
-
-      <!-- Barra superior -->
+    <div class="pm-inner" id="pm-inner">
       <div class="pm-bar">
         <span class="pm-counter">${idx + 1} / ${currentPhotoList.length}</span>
-        <button class="pm-close" onclick="closePhotoModal()">✕</button>
+        <button class="pm-close" id="pm-close-btn">✕</button>
       </div>
-
-      <!-- Imagen -->
-      <div class="pm-img" style="background:${col.bg}">${imgHtml}</div>
-
-      <!-- Navegación -->
-      <button class="pm-nav pm-prev" onclick="photoModalNav(-1)" ${hasPrev ? '' : 'disabled'}>‹</button>
-      <button class="pm-nav pm-next" onclick="photoModalNav(1)"  ${hasNext ? '' : 'disabled'}>›</button>
-
-      <!-- Info -->
+      <div class="pm-img" style="background:${col.bg}">
+        ${imgContent}
+        <button class="pm-nav pm-prev" id="pm-prev" ${hasPrev ? '' : 'disabled'}>‹</button>
+        <button class="pm-nav pm-next" id="pm-next" ${hasNext ? '' : 'disabled'}>›</button>
+      </div>
       <div class="pm-footer">
         <div class="pm-cat">${foto.categoria}</div>
         <div class="pm-name">${foto.nombre}</div>
@@ -995,12 +980,21 @@ function openPhotoModal(idx) {
     </div>`;
 
   modal.classList.add('open');
+
+  // Eventos — reasignar cada vez
+  document.getElementById('pm-close-btn').onclick = closePhotoModal;
+  const prevBtn = document.getElementById('pm-prev');
+  const nextBtn = document.getElementById('pm-next');
+  if (prevBtn) prevBtn.onclick = () => openPhotoModal(idx - 1);
+  if (nextBtn) nextBtn.onclick = () => openPhotoModal(idx + 1);
+
+  // Click fuera del inner cierra
+  modal.onclick = e => { if (e.target === modal) closePhotoModal(); };
 }
 
 function photoModalNav(dir) {
   const next = currentPhotoIdx + dir;
-  if (next < 0 || next >= currentPhotoList.length) return;
-  openPhotoModal(next);
+  if (next >= 0 && next < currentPhotoList.length) openPhotoModal(next);
 }
 
 function closePhotoModal() {
@@ -1008,13 +1002,6 @@ function closePhotoModal() {
   if (modal) modal.classList.remove('open');
 }
 
-// Click fuera cierra
-const photoModalEl = document.getElementById('photo-modal');
-if (photoModalEl) {
-  photoModalEl.addEventListener('click', e => { if (e.target === e.currentTarget) closePhotoModal(); });
-}
-
-// Teclado: flechas y Escape
 document.addEventListener('keydown', e => {
   const modal = document.getElementById('photo-modal');
   if (!modal || !modal.classList.contains('open')) return;
