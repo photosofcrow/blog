@@ -14,14 +14,12 @@ const state = {
 };
 
 // ═══════════════════════════════════════════════════════
-//  FETCH — con caché sessionStorage y carga lazy
+//  FETCH — caché sessionStorage
 // ═══════════════════════════════════════════════════════
 const BASE_DATA  = 'https://photosofcrow.github.io/blog/data/';
 const BASE_FOTOS = 'https://photosofcrow.github.io/blog/fotos/';
-const CACHE_TTL  = 5 * 60 * 1000; // 5 minutos
+const CACHE_TTL  = 5 * 60 * 1000;
 
-// ── Last-Modified de cada JSON via HEAD request ──
-// Devuelve timestamp ms o 0 si falla
 async function fetchLastModified(path) {
   try {
     const cacheKey = 'ice:lm:' + path;
@@ -37,48 +35,40 @@ async function fetchLastModified(path) {
   } catch (_) { return 0; }
 }
 
-// Obtiene timestamps de fotos.json y blog.json en paralelo
-// Guarda en state.lastModified = { photo: ms, blog: ms, cyber: ms }
 async function loadLastModified() {
   const [photoLM, blogLM] = await Promise.all([
     fetchLastModified(BASE_DATA + 'fotos.json'),
     fetchLastModified(BASE_DATA + 'blog.json'),
   ]);
-  // cyber no tiene JSON propio — usamos site.json como referencia
   const cyberLM = await fetchLastModified(BASE_DATA + 'site.json');
   state.lastModified = { photo: photoLM, blog: blogLM, cyber: cyberLM };
 }
 
-// Devuelve los portales ordenados por más reciente primero
-// Cada portal: { key, ico, title, desc, section, lm }
 function getSortedPortals() {
   const lm  = state.lastModified || { photo: 0, blog: 0, cyber: 0 };
   const d   = state.site;
   const portals = [
-    { key:'photo', ico:'🌿', title:'Fotografía',    desc: d?.portales?.foto  || '', section:'photo', lm: lm.photo },
-    { key:'cyber', ico:'⬡',  title:'Ciberseguridad',desc: d?.portales?.cyber || '', section:'cyber', lm: lm.cyber, icoColor:'var(--green)' },
-    { key:'code',  ico:'🖥️', title:'Programación',  desc: d?.portales?.code  || '', section:'win95', lm: lm.cyber },
+    { key:'photo', ico:'🌿', title:'Fotografía',     desc: d?.portales?.foto  || '', section:'photo', lm: lm.photo },
+    { key:'cyber', ico:'⬡',  title:'Ciberseguridad', desc: d?.portales?.cyber || '', section:'cyber', lm: lm.cyber, icoColor:'var(--green)' },
+    { key:'code',  ico:'🖥️', title:'Programación',   desc: d?.portales?.code  || '', section:'win95', lm: lm.cyber },
   ];
-  // Ordenar por lm descendente (más reciente primero)
   return portals.sort((a, b) => b.lm - a.lm);
 }
 
-// Formatea tiempo relativo: "hace 2 días", "hace 3 horas"
 function timeAgo(ms) {
   if (!ms) return '';
-  const diff = Date.now() - ms;
+  const diff  = Date.now() - ms;
   const mins  = Math.floor(diff / 60000);
   const hours = Math.floor(diff / 3600000);
   const days  = Math.floor(diff / 86400000);
-  if (mins  < 60)  return `hace ${mins} min`;
-  if (hours < 24)  return `hace ${hours}h`;
-  if (days  < 7)   return `hace ${days}d`;
-  if (days  < 30)  return `hace ${Math.floor(days/7)}sem`;
+  if (mins  < 60) return `hace ${mins} min`;
+  if (hours < 24) return `hace ${hours}h`;
+  if (days  < 7)  return `hace ${days}d`;
+  if (days  < 30) return `hace ${Math.floor(days/7)}sem`;
   return `hace ${Math.floor(days/30)}mes`;
 }
 
 async function loadJSON(path) {
-  // Intentar leer de sessionStorage
   try {
     const cached = sessionStorage.getItem('ice:' + path);
     if (cached) {
@@ -86,16 +76,12 @@ async function loadJSON(path) {
       if (Date.now() - ts < CACHE_TTL) return data;
     }
   } catch (_) {}
-
   const res = await fetch(path);
   if (!res.ok) throw new Error(`HTTP ${res.status} — ${path}`);
   const data = await res.json();
-
-  // Guardar en caché
   try {
     sessionStorage.setItem('ice:' + path, JSON.stringify({ ts: Date.now(), data }));
   } catch (_) {}
-
   return data;
 }
 
@@ -114,10 +100,7 @@ function fixFotoUrl(url) {
   return BASE_FOTOS + url;
 }
 
-// Carga mínima al inicio: solo site + equipo (necesarios para el landing)
-// fotos y blog se cargan en paralelo pero no bloquean el render inicial
 async function loadAllData() {
-  // Críticos: site y equipo — necesarios para renderizar el landing
   const [site, equipo] = await Promise.all([
     loadJSON(BASE_DATA + 'site.json'),
     loadJSON(BASE_DATA + 'equipo.json'),
@@ -126,7 +109,6 @@ async function loadAllData() {
   state.site.equipo = Array.isArray(equipo) ? equipo : (equipo.items || []);
   state.site.cita   = equipo.cita || '';
 
-  // No críticos: fotos, blog y timestamps — sin bloquear el render inicial
   Promise.all([
     loadJSON(BASE_DATA + 'fotos.json').then(raw => {
       state.fotos = toArray(raw, 'fotos').map(f => ({ ...f, url: fixFotoUrl(f.url) }));
@@ -139,7 +121,6 @@ async function loadAllData() {
       state.blog = toArray(raw, 'blog');
       renderBlog();
     }),
-    // Last-Modified: HEAD requests ligeros, re-ordena portales cuando llegan
     loadLastModified().then(() => renderPortals()),
   ]).catch(err => console.warn('[icesmoke] Error cargando datos secundarios:', err));
 }
@@ -155,20 +136,17 @@ function preloadImages(fotos) {
     if (!chunk.length) return;
     chunk.forEach(foto => {
       if (!foto.url || state.imgCache.has(foto.url)) return;
-      const img = new Image();
-      img.onload  = () => state.imgCache.set(foto.url, true);
-      img.onerror = () => state.imgCache.set(foto.url, false);
+      const img    = new Image();
+      img.onload   = () => state.imgCache.set(foto.url, true);
+      img.onerror  = () => state.imgCache.set(foto.url, false);
       img.decoding = 'async';
-      img.src = foto.url;
+      img.src      = foto.url;
     });
     i += CHUNK;
     setTimeout(loadNext, 300);
   }
-  if (typeof requestIdleCallback !== 'undefined') {
-    requestIdleCallback(loadNext);
-  } else {
-    setTimeout(loadNext, 500);
-  }
+  if (typeof requestIdleCallback !== 'undefined') requestIdleCallback(loadNext);
+  else setTimeout(loadNext, 500);
 }
 
 // ═══════════════════════════════════════════════════════
@@ -195,7 +173,6 @@ function resizeAllCanvases() {
   [bgCanvas, birdCanvas, matrixCanvas, transCanvas].forEach(c => {
     c.width = innerWidth; c.height = innerHeight;
   });
-  // net-canvas: ajustar resolución interna al tamaño visual
   netCanvas.width = netCanvas.offsetWidth || 700;
 }
 resizeAllCanvases();
@@ -265,7 +242,6 @@ const cursorDot  = document.getElementById('cursor');
 const cursorRing = document.getElementById('cursor-ring');
 let mx = 0, my = 0, rx = 0, ry = 0;
 
-// Solo activar en dispositivos con puntero fino (no táctil)
 if (window.matchMedia('(pointer: fine)').matches) {
   document.addEventListener('mousemove', e => {
     mx = e.clientX; my = e.clientY;
@@ -531,28 +507,11 @@ function drawLogo(p) {
   const g = logoCtx.createRadialGradient(LOGO_CX, LOGO_CY, 8, LOGO_CX, LOGO_CY, LOGO_R + 22);
   g.addColorStop(0, 'rgba(0,180,255,.06)'); g.addColorStop(1, 'rgba(0,0,0,0)');
   logoCtx.fillStyle = g; logoCtx.fillRect(0, 0, logoCanvas.width, logoCanvas.height);
-
-  if (p > LOGO_PH[0]) {
-    const t = Math.min(1, (p - LOGO_PH[0]) / (LOGO_PH[1] - LOGO_PH[0]));
-    logoCtx.strokeStyle = 'rgba(0,212,255,.9)'; logoCtx.lineWidth = 2.2; logoCtx.setLineDash([]); logoCtx.beginPath();
-    for (let i = 0; i < 6; i++) { if (i/6 > t) break; const np = Math.min(1,t*6-i); const [ax,ay]=oh[i],[bx,by]=oh[(i+1)%6]; if(!i)logoCtx.moveTo(ax,ay); logoCtx.lineTo(ax+(bx-ax)*np,ay+(by-ay)*np); } logoCtx.stroke();
-  }
-  if (p > LOGO_PH[1]) {
-    const t = Math.min(1, (p - LOGO_PH[1]) / (LOGO_PH[2] - LOGO_PH[1]));
-    logoCtx.strokeStyle = 'rgba(0,180,255,.6)'; logoCtx.lineWidth = 1.5; logoCtx.beginPath();
-    for (let i = 0; i < 6; i++) { if (i/6 > t) break; const np = Math.min(1,t*6-i); const [ax,ay]=ih[i],[bx,by]=ih[(i+1)%6]; if(!i)logoCtx.moveTo(ax,ay); logoCtx.lineTo(ax+(bx-ax)*np,ay+(by-ay)*np); } logoCtx.stroke();
-  }
-  if (p > LOGO_PH[2]) {
-    const t = Math.min(1, (p - LOGO_PH[2]) / (LOGO_PH[3] - LOGO_PH[2]));
-    logoCtx.strokeStyle = 'rgba(100,200,255,.28)'; logoCtx.lineWidth = 1; logoCtx.setLineDash([3,3]);
-    for (let i = 0; i < 6; i++) { if (i/6 > t) break; const lt=Math.min(1,t*6-i); logoCtx.beginPath(); logoCtx.moveTo(oh[i][0],oh[i][1]); logoCtx.lineTo(oh[i][0]+(ih[i][0]-oh[i][0])*lt,oh[i][1]+(ih[i][1]-oh[i][1])*lt); logoCtx.stroke(); } logoCtx.setLineDash([]);
-  }
-  if (p > LOGO_PH[3]) {
-    const t = Math.min(1, (p - LOGO_PH[3]) / (LOGO_PH[4] - LOGO_PH[3]));
-    logoCtx.strokeStyle = 'rgba(0,200,255,.18)'; logoCtx.lineWidth = 1; logoCtx.setLineDash([2,4]);
-    [[0,3],[1,4],[2,5]].forEach(([a,b],idx) => { if(idx/3>t)return; const lt=Math.min(1,t*3-idx); logoCtx.beginPath(); logoCtx.moveTo(oh[a][0],oh[a][1]); logoCtx.lineTo(oh[a][0]+(oh[b][0]-oh[a][0])*lt,oh[a][1]+(oh[b][1]-oh[a][1])*lt); logoCtx.stroke(); }); logoCtx.setLineDash([]);
-  }
-  logoCtx.textAlign = 'center'; logoCtx.textBaseline = 'middle';
+  if (p > LOGO_PH[0]) { const t=Math.min(1,(p-LOGO_PH[0])/(LOGO_PH[1]-LOGO_PH[0])); logoCtx.strokeStyle='rgba(0,212,255,.9)'; logoCtx.lineWidth=2.2; logoCtx.setLineDash([]); logoCtx.beginPath(); for(let i=0;i<6;i++){if(i/6>t)break;const np=Math.min(1,t*6-i);const[ax,ay]=oh[i],[bx,by]=oh[(i+1)%6];if(!i)logoCtx.moveTo(ax,ay);logoCtx.lineTo(ax+(bx-ax)*np,ay+(by-ay)*np);}logoCtx.stroke(); }
+  if (p > LOGO_PH[1]) { const t=Math.min(1,(p-LOGO_PH[1])/(LOGO_PH[2]-LOGO_PH[1])); logoCtx.strokeStyle='rgba(0,180,255,.6)'; logoCtx.lineWidth=1.5; logoCtx.beginPath(); for(let i=0;i<6;i++){if(i/6>t)break;const np=Math.min(1,t*6-i);const[ax,ay]=ih[i],[bx,by]=ih[(i+1)%6];if(!i)logoCtx.moveTo(ax,ay);logoCtx.lineTo(ax+(bx-ax)*np,ay+(by-ay)*np);}logoCtx.stroke(); }
+  if (p > LOGO_PH[2]) { const t=Math.min(1,(p-LOGO_PH[2])/(LOGO_PH[3]-LOGO_PH[2])); logoCtx.strokeStyle='rgba(100,200,255,.28)'; logoCtx.lineWidth=1; logoCtx.setLineDash([3,3]); for(let i=0;i<6;i++){if(i/6>t)break;const lt=Math.min(1,t*6-i);logoCtx.beginPath();logoCtx.moveTo(oh[i][0],oh[i][1]);logoCtx.lineTo(oh[i][0]+(ih[i][0]-oh[i][0])*lt,oh[i][1]+(ih[i][1]-oh[i][1])*lt);logoCtx.stroke();}logoCtx.setLineDash([]); }
+  if (p > LOGO_PH[3]) { const t=Math.min(1,(p-LOGO_PH[3])/(LOGO_PH[4]-LOGO_PH[3])); logoCtx.strokeStyle='rgba(0,200,255,.18)'; logoCtx.lineWidth=1; logoCtx.setLineDash([2,4]); [[0,3],[1,4],[2,5]].forEach(([a,b],idx)=>{if(idx/3>t)return;const lt=Math.min(1,t*3-idx);logoCtx.beginPath();logoCtx.moveTo(oh[a][0],oh[a][1]);logoCtx.lineTo(oh[a][0]+(oh[b][0]-oh[a][0])*lt,oh[a][1]+(oh[b][1]-oh[a][1])*lt);logoCtx.stroke();}); logoCtx.setLineDash([]); }
+  logoCtx.textAlign='center'; logoCtx.textBaseline='middle';
   if (p > LOGO_PH[5]) { const t=Math.min(1,(p-LOGO_PH[5])/(LOGO_PH[6]-LOGO_PH[5])); logoCtx.globalAlpha=t; logoCtx.fillStyle='#fff'; logoCtx.font='bold 16px "Courier New",monospace'; logoCtx.fillText('icesmoke',LOGO_CX,LOGO_CY-8); logoCtx.globalAlpha=1; }
   if (p > LOGO_PH[6]) { const t=Math.min(1,(p-LOGO_PH[6])/(LOGO_PH[7]-LOGO_PH[6])); logoCtx.globalAlpha=t; logoCtx.fillStyle='rgba(0,212,255,.95)'; logoCtx.font='bold 11px "Courier New",monospace'; logoCtx.fillText('DEV',LOGO_CX,LOGO_CY+12); logoCtx.globalAlpha=1; }
   if (p > LOGO_PH[7]) { const t=Math.min(1,(p-LOGO_PH[7])/(LOGO_PH[8]-LOGO_PH[7])); oh.slice(0,Math.ceil(t*6)).forEach((pt,i)=>{const dt=Math.min(1,t*6-i);logoCtx.beginPath();logoCtx.arc(pt[0],pt[1],3*dt,0,Math.PI*2);logoCtx.fillStyle='rgba(0,212,255,.9)';logoCtx.fill();}); }
@@ -561,32 +520,32 @@ function drawLogo(p) {
 }
 
 function replayLogo() {
-  state.logoProg = 0; state.logoLine = 0; state.logoHtml = '';
-  const codeEl = document.getElementById('logo-code-display');
-  const statEl = document.getElementById('logo-status');
-  if (codeEl) codeEl.innerHTML = '';
-  if (statEl) { statEl.textContent = 'Compilando...'; statEl.style.color = '#444'; }
-  if (state.logoRAF) cancelAnimationFrame(state.logoRAF);
-  (function anim() {
-    if (state.logoProg < 1) {
-      state.logoProg += 0.007; drawLogo(state.logoProg);
-      const idx = Math.floor(state.logoProg * LOGO_CODE.length);
-      if (idx > state.logoLine && state.logoLine < LOGO_CODE.length) {
-        const l = LOGO_CODE[state.logoLine];
-        state.logoHtml += `<span style="color:${l.c}">${l.t}</span>\n`;
-        if (codeEl) { codeEl.innerHTML = state.logoHtml + '<span style="color:#00ff41;opacity:.6">█</span>'; codeEl.scrollTop = codeEl.scrollHeight; }
+  state.logoProg=0; state.logoLine=0; state.logoHtml='';
+  const codeEl=document.getElementById('logo-code-display');
+  const statEl=document.getElementById('logo-status');
+  if(codeEl) codeEl.innerHTML='';
+  if(statEl){statEl.textContent='Compilando...';statEl.style.color='#444';}
+  if(state.logoRAF) cancelAnimationFrame(state.logoRAF);
+  (function anim(){
+    if(state.logoProg<1){
+      state.logoProg+=0.007; drawLogo(state.logoProg);
+      const idx=Math.floor(state.logoProg*LOGO_CODE.length);
+      if(idx>state.logoLine&&state.logoLine<LOGO_CODE.length){
+        const l=LOGO_CODE[state.logoLine];
+        state.logoHtml+=`<span style="color:${l.c}">${l.t}</span>\n`;
+        if(codeEl){codeEl.innerHTML=state.logoHtml+'<span style="color:#00ff41;opacity:.6">█</span>';codeEl.scrollTop=codeEl.scrollHeight;}
         state.logoLine++;
       }
-      state.logoRAF = requestAnimationFrame(anim);
+      state.logoRAF=requestAnimationFrame(anim);
     } else {
       drawLogo(1);
-      if (statEl) { statEl.textContent = '✓ Build OK — 0 errores'; statEl.style.color = '#007700'; }
+      if(statEl){statEl.textContent='✓ Build OK — 0 errores';statEl.style.color='#007700';}
     }
   })();
 }
 
 // ═══════════════════════════════════════════════════════
-//  SMOKE TRANSITION — máx 1 segundo
+//  SMOKE TRANSITION
 // ═══════════════════════════════════════════════════════
 const smokeParticles = [];
 
@@ -595,15 +554,11 @@ function spawnSmoke(W, H) {
   const count = Math.max(20, Math.floor(W / 18));
   for (let i = 0; i < count; i++) {
     smokeParticles.push({
-      x:     Math.random() * W,
-      y:     H + 10 + Math.random() * 40,
-      r:     55 + Math.random() * 85,
-      vx:    (Math.random() - 0.5) * 1.2,
-      vy:    -(2.8 + Math.random() * 3.8),
-      a:     0,
-      ta:    0.16 + Math.random() * 0.24,
-      rot:   Math.random() * Math.PI * 2,
-      vr:    (Math.random() - 0.5) * 0.018,
+      x: Math.random() * W, y: H + 10 + Math.random() * 40,
+      r: 55 + Math.random() * 85,
+      vx: (Math.random() - 0.5) * 1.2, vy: -(2.8 + Math.random() * 3.8),
+      a: 0, ta: 0.16 + Math.random() * 0.24,
+      rot: Math.random() * Math.PI * 2, vr: (Math.random() - 0.5) * 0.018,
       phase: Math.random(),
     });
   }
@@ -611,42 +566,32 @@ function spawnSmoke(W, H) {
 
 function updateSmoke() {
   smokeParticles.forEach(p => {
-    p.x   += p.vx;
-    p.y   += p.vy;
-    p.vy  *= 0.984;
-    p.vx  += (Math.random() - 0.5) * 0.09;
-    p.r   += 1.1;
-    p.rot += p.vr;
-    p.a    = Math.min(p.ta, p.a + 0.048);
+    p.x += p.vx; p.y += p.vy; p.vy *= 0.984;
+    p.vx += (Math.random() - 0.5) * 0.09;
+    p.r += 1.1; p.rot += p.vr;
+    p.a = Math.min(p.ta, p.a + 0.048);
   });
 }
 
 function drawSmoke(progress, W, H) {
   transCtx.save();
   smokeParticles.forEach(p => {
-    let alpha;
-    if (progress <= 1) {
-      alpha = p.a * Math.min(1, progress * 2.8);
-    } else {
-      alpha = p.a * Math.max(0, 1 - (progress - 1) * 2.8);
-    }
+    let alpha = progress <= 1
+      ? p.a * Math.min(1, progress * 2.8)
+      : p.a * Math.max(0, 1 - (progress - 1) * 2.8);
     if (alpha <= 0.004) return;
-
     transCtx.save();
     transCtx.translate(p.x, p.y);
     transCtx.rotate(p.rot);
-
     const hue = 200 + Math.sin(p.phase + progress * 2) * 18;
     const grd = transCtx.createRadialGradient(0, 0, 0, 0, 0, p.r);
     grd.addColorStop(0,    `hsla(${hue}, 8%, 52%, ${alpha * 0.9})`);
     grd.addColorStop(0.38, `hsla(${hue}, 6%, 36%, ${alpha * 0.6})`);
     grd.addColorStop(0.72, `hsla(${hue}, 5%, 20%, ${alpha * 0.28})`);
     grd.addColorStop(1,    `hsla(${hue}, 4%, 8%, 0)`);
-
     transCtx.beginPath();
     transCtx.ellipse(0, 0, p.r, p.r * 0.7, 0, 0, Math.PI * 2);
-    transCtx.fillStyle = grd;
-    transCtx.fill();
+    transCtx.fillStyle = grd; transCtx.fill();
     transCtx.restore();
   });
   transCtx.restore();
@@ -655,94 +600,64 @@ function drawSmoke(progress, W, H) {
 function runTransition(targetName, callback) {
   if (state.transRunning) return;
   state.transRunning = true;
-
-  transCanvas.width  = innerWidth;
-  transCanvas.height = innerHeight;
+  transCanvas.width = innerWidth; transCanvas.height = innerHeight;
   const W = transCanvas.width, H = transCanvas.height;
-
-  transOverlay.style.opacity       = '1';
+  transOverlay.style.opacity = '1';
   transOverlay.style.pointerEvents = 'all';
-
-  // Ocultar label (no lo usamos en la transición de humo)
   if (transLabel) transLabel.style.color = 'rgba(255,255,255,0)';
-
   spawnSmoke(W, H);
-
-  // Timing: 1000ms total
-  // 0–350ms  → humo sube y cubre        (progress 0→1)
-  // 350–650ms → pantalla cubierta        (progress = 1)
-  // 650–1000ms → humo se disipa          (progress 1→2)
-  const T_COVER = 350;
-  const T_HOLD  = 300;
-  const T_RISE  = 350;
-  const TOTAL   = T_COVER + T_HOLD + T_RISE; // 1000ms
-
-  let start  = null;
-  let cbDone = false;
-
+  const T_COVER = 350, T_HOLD = 300, T_RISE = 350, TOTAL = 1000;
+  let start = null, cbDone = false;
   function easeInOut(t) { return t < 0.5 ? 2*t*t : -1 + (4 - 2*t) * t; }
-
   function frame(ts) {
     if (!start) start = ts;
     const elapsed = ts - start;
-
     transCtx.clearRect(0, 0, W, H);
     updateSmoke();
-
     let progress;
-
     if (elapsed < T_COVER) {
       progress = easeInOut(elapsed / T_COVER);
-      // Lanzar callback cuando el humo lleva ~300ms (casi opaco)
       if (!cbDone && elapsed >= 300) { cbDone = true; callback(); }
-
     } else if (elapsed < T_COVER + T_HOLD) {
       progress = 1;
       if (!cbDone) { cbDone = true; callback(); }
-
     } else {
       const rElapsed = elapsed - T_COVER - T_HOLD;
       progress = 1 + easeInOut(Math.min(1, rElapsed / T_RISE));
     }
-
     drawSmoke(progress, W, H);
-
     if (elapsed < TOTAL) {
       requestAnimationFrame(frame);
     } else {
       transCtx.clearRect(0, 0, W, H);
-      transOverlay.style.opacity       = '0';
+      transOverlay.style.opacity = '0';
       transOverlay.style.pointerEvents = 'none';
-      smokeParticles.length            = 0;
-      state.transRunning               = false;
+      smokeParticles.length = 0;
+      state.transRunning = false;
     }
   }
-
   requestAnimationFrame(frame);
 }
 
 // ═══════════════════════════════════════════════════════
 //  NAVIGATION
 // ═══════════════════════════════════════════════════════
-// ── Mapa de rutas ──
 const ROUTE_MAP = {
   landing: '/blog/',
   photo:   '/blog/photo',
   cyber:   '/blog/cyber',
   win95:   '/blog/code',
 };
-const ROUTE_REVERSE = Object.fromEntries(Object.entries(ROUTE_MAP).map(([k,v]) => [v, k]));
+const ROUTE_REVERSE = Object.fromEntries(
+  Object.entries(ROUTE_MAP).map(([k, v]) => [v, k])
+);
 
 function pushRoute(section, blogSlug = null) {
   let url;
-  if (blogSlug) {
-    url = `/blog/blog/${blogSlug}`;
-  } else {
-    url = ROUTE_MAP[section] || '/blog/';
-  }
-  if (window.location.pathname !== url) {
+  if (blogSlug) url = `/blog/blog/${blogSlug}`;
+  else url = ROUTE_MAP[section] || '/blog/';
+  if (window.location.pathname !== url)
     history.pushState({ section, blogSlug }, '', url);
-  }
 }
 
 function slugify(titulo) {
@@ -754,7 +669,6 @@ function slugify(titulo) {
 }
 
 function goTo(t, opts = {}) {
-  // Cerrar menú móvil si está abierto
   const mobileMenu = document.getElementById('mobile-menu');
   const hamBtn     = document.getElementById('ham-btn');
   if (mobileMenu) mobileMenu.classList.remove('open');
@@ -784,20 +698,22 @@ function goTo(t, opts = {}) {
       if (t === 'win95') { updateWinTime(); startWin95Intervals(); }
     }
     state.currentSection = t;
-    // Actualizar URL sin recargar
     pushRoute(t, opts.blogSlug || null);
   });
 }
 
-// Botón atrás/adelante del navegador
 window.addEventListener('popstate', e => {
   const s = e.state;
   if (!s) { goTo('landing'); return; }
   if (s.blogSlug) {
-    // Encontrar el artículo por slug y abrirlo
-    const idx = state.blog.findIndex(b => slugify(b.titulo) === s.blogSlug);
-    goTo('landing');
-    if (idx !== -1) setTimeout(() => openBlog(idx), 800);
+    // Navegar a la página individual del artículo
+    const b = state.blog.find(b => (b.slug || slugify(b.titulo)) === s.blogSlug);
+    if (b) {
+      const url = b.url || `/blog/article/${b.slug || slugify(b.titulo)}.html`;
+      window.location.href = url;
+    } else {
+      goTo('landing');
+    }
   } else {
     goTo(s.section || 'landing');
   }
@@ -812,7 +728,6 @@ function onPhotoScroll(e) {
   if (nh) nh.setAttribute('transform', `translate(0,${p * -88})`);
 }
 
-// Menú hamburguesa
 function toggleMobileMenu() {
   const menu = document.getElementById('mobile-menu');
   const btn  = document.getElementById('ham-btn');
@@ -829,7 +744,6 @@ const WIN_NAMES = {
 };
 
 function startDrag(e, id) {
-  // No arrastrar en móvil
   if (window.innerWidth <= 768) return;
   state.dragging = id;
   const w = document.getElementById(id), r = w.getBoundingClientRect();
@@ -859,8 +773,8 @@ function openWin(n) {
   if (n === 'logo') setTimeout(replayLogo, 150);
   updateTaskbar();
 }
-function closeWin(id)    { const w = document.getElementById(id); if(w) w.style.display = 'none'; updateTaskbar(); }
-function minimizeWin(id) { const w = document.getElementById(id); if(w) w.style.display = 'none'; updateTaskbar(); }
+function closeWin(id)    { const w = document.getElementById(id); if(w) w.style.display='none'; updateTaskbar(); }
+function minimizeWin(id) { const w = document.getElementById(id); if(w) w.style.display='none'; updateTaskbar(); }
 
 function updateTaskbar() {
   const t = document.getElementById('taskbar-tasks');
@@ -870,17 +784,15 @@ function updateTaskbar() {
     const w = document.getElementById(`win-${n}`);
     if (w && w.style.display !== 'none') {
       const b = document.createElement('button');
-      b.className = 'taskbar-task active';
+      b.className   = 'taskbar-task active';
       b.textContent = WIN_NAMES[n];
-      b.onclick = () => minimizeWin(`win-${n}`);
+      b.onclick     = () => minimizeWin(`win-${n}`);
       t.appendChild(b);
     }
   });
 }
-// Solo correr el intervalo cuando Win95 está activo
-let taskbarInterval = null;
-let winTimeInterval = null;
 
+let taskbarInterval = null, winTimeInterval = null;
 function startWin95Intervals() {
   if (!taskbarInterval) taskbarInterval = setInterval(updateTaskbar, 600);
   if (!winTimeInterval) winTimeInterval = setInterval(updateWinTime, 15000);
@@ -904,7 +816,6 @@ function updateWinTime() {
   const d = new Date();
   t.textContent = d.getHours().toString().padStart(2,'0') + ':' + d.getMinutes().toString().padStart(2,'0');
 }
-// updateWinTime interval ahora gestionado por startWin95Intervals()
 
 // ═══════════════════════════════════════════════════════
 //  POLAROIDS
@@ -948,7 +859,7 @@ function renderSite() {
   }
   document.title = `${d.nombre} — Portfolio`;
 
-  set('site-bio',      d.bio);
+  set('site-bio',       d.bio);
   set('footer-tagline', d.tagline);
 
   const skillsEl = $('site-skills');
@@ -959,7 +870,6 @@ function renderSite() {
     `<div class="stat"><div class="stat-num">${s.num}</div><div class="stat-label">${s.label}</div></div>`
   ).join('');
 
-  // Los portales se renderizan por separado con orden dinámico
   renderPortals();
 
   const gear = $('photo-gear');
@@ -973,34 +883,26 @@ function renderSite() {
   ).join('');
 }
 
-// ── Portales ordenados por Last-Modified ──
 function renderPortals() {
   const container = document.getElementById('portals-container');
   if (!container) return;
-
-  const sorted  = getSortedPortals();
+  const sorted     = getSortedPortals();
   const mostRecent = sorted[0]?.key;
-
   container.innerHTML = sorted.map(p => {
-    const isNew   = p.key === mostRecent && p.lm > 0;
-    const ago     = timeAgo(p.lm);
-    const badge   = isNew
+    const isNew = p.key === mostRecent && p.lm > 0;
+    const ago   = timeAgo(p.lm);
+    const badge = isNew
       ? `<span class="portal-updated-badge">● Actualizado${ago ? ' ' + ago : ''}</span>`
       : '';
-
     return `
       <div class="portal${isNew ? ' portal--recent' : ''}" onclick="goTo('${p.section}')">
         <div class="portal-ico"${p.icoColor ? ` style="color:${p.icoColor}"` : ''}>${p.ico}</div>
-        <div class="portal-txt">
-          <h3>${p.title}${badge}</h3>
-          <p>${p.desc}</p>
-        </div>
+        <div class="portal-txt"><h3>${p.title}${badge}</h3><p>${p.desc}</p></div>
         <div class="portal-arrow">›</div>
       </div>`;
   }).join('');
 }
 
-// ── Paleta de categorías ──
 const CAT_PALETTE = {
   Fauna:   { bg:'linear-gradient(135deg,#1a2e0a,#3d5a28)', accent:'#5aaa38' },
   Paisaje: { bg:'linear-gradient(135deg,#0a1a2a,#1a3a5a)', accent:'#3a8aaa' },
@@ -1022,27 +924,20 @@ function getCategories() { return ['Todas', ...new Set(state.fotos.map(f => f.ca
 function renderLandingStrip() {
   const wrap = document.getElementById('landing-photo-strip');
   if (!wrap) return;
-
-  const fotos = state.fotos.length ? state.fotos : [];
-
-  // Calcular cuántos sprocket holes necesitamos por el ancho de la tira
-  // Cada fotograma mide 206px (200 + 3*2 margin), mínimo 20 holes
+  const fotos     = state.fotos.length ? state.fotos : [];
   const frameCount = fotos.length || 8;
   const holeCount  = Math.max(20, frameCount * 3);
 
-  // Genera fila de sprocket holes
   function holesRow(n) {
     let h = '<div class="film-holes-row">';
     for (let i = 0; i < n; i++) h += '<div class="film-hole"></div>';
-    h += '</div>';
-    return h;
+    return h + '</div>';
   }
 
-  // Genera fotogramas
   let frames = '';
   if (fotos.length) {
     fotos.forEach((foto, i) => {
-      const num = String(i + 1).padStart(3, '0');
+      const num     = String(i + 1).padStart(3, '0');
       const imgHtml = foto.url
         ? `<img src="${foto.url}" alt="${foto.nombre}" loading="lazy" decoding="async"
              onerror="this.style.display='none';this.insertAdjacentHTML('afterend','<div class=film-frame-placeholder style=height:130px>📷</div>')">`
@@ -1051,13 +946,10 @@ function renderLandingStrip() {
         <div class="film-frame" data-idx="${i}" title="${foto.nombre}">
           <span class="film-frame-num">${num}</span>
           ${imgHtml}
-          <div class="film-frame-label">
-            <span>${foto.nombre}</span>
-          </div>
+          <div class="film-frame-label"><span>${foto.nombre}</span></div>
         </div>`;
     });
   } else {
-    // Placeholders si no hay fotos aún
     for (let i = 0; i < 8; i++) {
       frames += `<div class="film-frame">
         <span class="film-frame-num">${String(i+1).padStart(3,'0')}</span>
@@ -1071,55 +963,31 @@ function renderLandingStrip() {
     <div class="film-roll-num">ICESMOKE · ROLL 01 · 35mm</div>
     <div class="film-track">
       ${holesRow(holeCount)}
-      <div class="film-frames-row" id="film-frames-row">
-        ${frames}
-      </div>
+      <div class="film-frames-row" id="film-frames-row">${frames}</div>
       ${holesRow(holeCount)}
     </div>`;
 
-  // Drag scroll
   const strip = wrap.closest('.film-strip') || wrap.parentElement;
   if (!strip) return;
 
   let isDown = false, startX = 0, scrollLeft = 0;
+  strip.addEventListener('mousedown', e => { isDown=true; strip.classList.add('dragging'); startX=e.pageX-strip.offsetLeft; scrollLeft=strip.scrollLeft; e.preventDefault(); });
+  strip.addEventListener('mouseleave', () => { isDown=false; strip.classList.remove('dragging'); });
+  strip.addEventListener('mouseup',    () => { isDown=false; strip.classList.remove('dragging'); });
+  strip.addEventListener('mousemove',  e => { if(!isDown)return; e.preventDefault(); strip.scrollLeft=scrollLeft-(e.pageX-strip.offsetLeft-startX); });
 
-  strip.addEventListener('mousedown', e => {
-    isDown = true; strip.classList.add('dragging');
-    startX = e.pageX - strip.offsetLeft;
-    scrollLeft = strip.scrollLeft;
-    e.preventDefault();
-  });
-  strip.addEventListener('mouseleave', () => { isDown = false; strip.classList.remove('dragging'); });
-  strip.addEventListener('mouseup',    () => { isDown = false; strip.classList.remove('dragging'); });
-  strip.addEventListener('mousemove',  e => {
-    if (!isDown) return;
-    e.preventDefault();
-    strip.scrollLeft = scrollLeft - (e.pageX - strip.offsetLeft - startX);
-  });
+  let touchStartX=0, touchScrollLeft=0;
+  strip.addEventListener('touchstart', e => { touchStartX=e.touches[0].pageX; touchScrollLeft=strip.scrollLeft; }, { passive:true });
+  strip.addEventListener('touchmove',  e => { strip.scrollLeft=touchScrollLeft-(e.touches[0].pageX-touchStartX); }, { passive:true });
 
-  // Touch scroll
-  let touchStartX = 0, touchScrollLeft = 0;
-  strip.addEventListener('touchstart', e => {
-    touchStartX    = e.touches[0].pageX;
-    touchScrollLeft = strip.scrollLeft;
-  }, { passive: true });
-  strip.addEventListener('touchmove', e => {
-    strip.scrollLeft = touchScrollLeft - (e.touches[0].pageX - touchStartX);
-  }, { passive: true });
-
-  // Click en fotograma → abrir galería en esa foto
   const framesRow = document.getElementById('film-frames-row');
   if (framesRow) {
     framesRow.addEventListener('click', e => {
       const frame = e.target.closest('.film-frame[data-idx]');
-      if (!frame) return;
-      // Si arrastramos, no abrir
-      if (strip.classList.contains('dragging')) return;
-      const idx = parseInt(frame.dataset.idx, 10);
+      if (!frame || strip.classList.contains('dragging')) return;
       currentPhotoList = state.fotos;
       goTo('photo');
-      // Esperar a que la sección cargue, luego abrir la foto
-      setTimeout(() => openPhotoModal(idx), 600);
+      setTimeout(() => openPhotoModal(parseInt(frame.dataset.idx, 10)), 600);
     });
   }
 }
@@ -1133,47 +1001,37 @@ function buildPhotoFilters() {
     const btn = document.createElement('button');
     btn.textContent = cat;
     btn.className   = 'filter-btn' + (cat === state.activeFilter ? ' active' : '');
-    btn.onclick = () => { state.activeFilter = cat; buildPhotoFilters(); renderPhotoGallery(); };
+    btn.onclick     = () => { state.activeFilter = cat; buildPhotoFilters(); renderPhotoGallery(); };
     frag.appendChild(btn);
   });
   container.innerHTML = '';
   container.appendChild(frag);
 }
 
-// ── Galería con IntersectionObserver ──
-let galleryObserver = null;
-// Estado para el lightbox con navegación
-let currentPhotoList = [];
-let currentPhotoIdx  = 0;
+// ── Galería ──
+let currentPhotoList = [], currentPhotoIdx = 0;
 
 function renderPhotoGallery() {
   const grid = document.getElementById('photo-gallery-grid');
   if (!grid) return;
-
   const fotos = state.activeFilter === 'Todas'
     ? state.fotos
     : state.fotos.filter(f => f.categoria === state.activeFilter);
-
   currentPhotoList = fotos;
-
   if (!fotos.length) {
     grid.innerHTML = `<div style="grid-column:1/-1;text-align:center;padding:3rem;color:rgba(255,255,255,0.3);font-size:.85rem">No hay fotos en esta categoría aún.</div>`;
     return;
   }
-
   grid.innerHTML = '';
-
   fotos.forEach((foto, idx) => {
     const col  = getCatStyle(foto.categoria);
     const card = document.createElement('div');
     card.className = 'rural-card';
-
     const imgHtml = foto.url
       ? `<img src="${foto.url}" alt="${foto.nombre}" loading="lazy" decoding="async"
            style="width:100%;height:100%;object-fit:cover;position:absolute;inset:0;display:block;transition:transform .4s"
            onerror="this.style.display='none'">`
       : `<span style="position:relative;z-index:1;font-size:3rem">${foto.emoji||'📷'}</span>`;
-
     card.innerHTML = `
       <div class="rural-card-img" style="aspect-ratio:4/3;background:${col.bg};position:relative;overflow:hidden">
         ${imgHtml}
@@ -1183,47 +1041,40 @@ function renderPhotoGallery() {
           <p>${(foto.temas_relacionados||[]).slice(0,3).join(' · ')}</p>
         </div>
       </div>`;
-
     card.addEventListener('click', () => openPhotoModal(idx));
     grid.appendChild(card);
   });
 }
 
-// ── Modal foto pantalla completa con nav ──
 function openPhotoModal(idx) {
   currentPhotoIdx = idx;
   const foto = currentPhotoList[idx];
   if (!foto) return;
-
-  // Buscar o crear el modal
   let modal = document.getElementById('photo-modal');
   if (!modal) {
     modal = document.createElement('div');
     modal.id = 'photo-modal';
     document.body.appendChild(modal);
   }
-
   const col     = getCatStyle(foto.categoria);
   const hasPrev = idx > 0;
   const hasNext = idx < currentPhotoList.length - 1;
   const tags    = (foto.temas_relacionados||[]).map(t => `<span class="photo-tag">#${t}</span>`).join('');
-
   const imgContent = foto.url
     ? `<img src="${foto.url}" alt="${foto.nombre}" decoding="async"
         style="max-width:100%;max-height:70vh;object-fit:contain;display:block;margin:0 auto"
-        onerror="this.outerHTML='<span style=\'font-size:5rem\'>${foto.emoji||'📷'}</span>'">`
+        onerror="this.outerHTML='<span style=\\'font-size:5rem\\'>${foto.emoji||'📷'}</span>'">`
     : `<span style="font-size:5rem">${foto.emoji||'📷'}</span>`;
-
   modal.innerHTML = `
-    <div class="pm-inner" id="pm-inner">
+    <div class="pm-inner">
       <div class="pm-bar">
         <span class="pm-counter">${idx + 1} / ${currentPhotoList.length}</span>
         <button class="pm-close" id="pm-close-btn">✕</button>
       </div>
       <div class="pm-img" style="background:${col.bg}">
         ${imgContent}
-        <button class="pm-nav pm-prev" id="pm-prev" ${hasPrev ? '' : 'disabled'}>‹</button>
-        <button class="pm-nav pm-next" id="pm-next" ${hasNext ? '' : 'disabled'}>›</button>
+        <button class="pm-nav pm-prev" id="pm-prev" ${hasPrev?'':'disabled'}>‹</button>
+        <button class="pm-nav pm-next" id="pm-next" ${hasNext?'':'disabled'}>›</button>
       </div>
       <div class="pm-footer">
         <div class="pm-cat">${foto.categoria}</div>
@@ -1232,18 +1083,13 @@ function openPhotoModal(idx) {
         ${tags ? `<div class="pm-tags">${tags}</div>` : ''}
       </div>
     </div>`;
-
-  modal.style.display = 'flex';  // sobreescribe cualquier display:none inline del HTML
+  modal.style.display = 'flex';
   modal.classList.add('open');
-
-  // Eventos — reasignar cada vez
   document.getElementById('pm-close-btn').onclick = closePhotoModal;
   const prevBtn = document.getElementById('pm-prev');
   const nextBtn = document.getElementById('pm-next');
   if (prevBtn) prevBtn.onclick = () => openPhotoModal(idx - 1);
   if (nextBtn) nextBtn.onclick = () => openPhotoModal(idx + 1);
-
-  // Click fuera del inner cierra
   modal.onclick = e => { if (e.target === modal) closePhotoModal(); };
 }
 
@@ -1267,66 +1113,73 @@ document.addEventListener('keydown', e => {
   if (e.key === 'Escape')     closePhotoModal();
 });
 
-// ── Blog ──
-let _blogRendered = false;
+// ═══════════════════════════════════════════════════════
+//  BLOG — páginas individuales
+// ═══════════════════════════════════════════════════════
+
+/**
+ * Cada entrada de blog.json tiene ahora solo metadatos:
+ * { cat, fecha, minutos, titulo, slug, url }
+ * Sin "cuerpo" — el contenido vive en /blog/article/slug.html
+ */
 function renderBlog() {
-  if (_blogRendered && !state.blog.length) return; // nada que renderizar
   const blogGrid = document.getElementById('blog-grid');
-  if (!blogGrid) return;
-  if (_blogRendered && blogGrid.children.length === state.blog.length) return; // ya está
-  _blogRendered = true;
-  blogGrid.innerHTML = state.blog.map((b, i) => `
-    <div class="blog-item" onclick="openBlog(${i})">
-      <span class="blog-cat">${b.cat}</span>
-      <span class="blog-title">${b.titulo}</span>
-      <span class="blog-meta">${b.fecha} · ${b.minutos} min</span>
-    </div>`).join('');
+  if (!blogGrid || !state.blog.length) return;
+
+  blogGrid.innerHTML = state.blog.map((b, i) => {
+    // Calcular URL: usar b.url si existe, construir desde slug o título
+    const slug = b.slug || slugify(b.titulo);
+    const url  = b.url  || `/blog/article/${slug}.html`;
+
+    return `
+      <div class="blog-item" onclick="openBlog(${i})" data-url="${url}">
+        <span class="blog-cat">${b.cat}</span>
+        <span class="blog-title">${b.titulo}</span>
+        <span class="blog-meta">${b.fecha} · ${b.minutos} min</span>
+      </div>`;
+  }).join('');
 }
 
 function openBlog(i) {
-  const b = state.blog[i]; if (!b) return;
-  const catEl   = document.getElementById('modal-cat');
-  const titleEl = document.getElementById('modal-title');
-  const bodyEl  = document.getElementById('modal-body');
-  if (catEl)   catEl.textContent   = b.cat;
-  if (titleEl) titleEl.textContent = b.titulo;
-  if (bodyEl)  bodyEl.innerHTML    = `<div class="modal-meta">${b.fecha} · ${b.minutos} min lectura</div>${b.cuerpo}`;
-  const modal = document.getElementById('blog-modal');
-  if (modal) modal.classList.add('open');
-  // Actualizar URL con slug del artículo
-  const slug = slugify(b.titulo);
-  history.pushState({ section: 'landing', blogSlug: slug }, '', `/blog/blog/${slug}`);
-  document.title = `${b.titulo} — icesmoke`;
+  const b = state.blog[i];
+  if (!b) return;
+
+  const slug = b.slug || slugify(b.titulo);
+  const url  = b.url  || `/blog/article/${slug}.html`;
+
+  // Navegar a la página individual
+  window.location.href = url;
 }
 
+// closeBlogModal: ya no necesaria con páginas individuales
+// Se mantiene por compatibilidad si hay HTML antiguo
 function closeBlogModal() {
   const modal = document.getElementById('blog-modal');
   if (modal) modal.classList.remove('open');
-  // Volver a la URL del landing al cerrar
   history.pushState({ section: 'landing' }, '', '/blog/');
   document.title = `${state.site?.nombre || 'icesmoke'} — Portfolio`;
 }
 
 const blogModalEl = document.getElementById('blog-modal');
 if (blogModalEl) {
-  blogModalEl.addEventListener('click', e => { if (e.target === e.currentTarget) closeBlogModal(); });
+  blogModalEl.addEventListener('click', e => {
+    if (e.target === e.currentTarget) closeBlogModal();
+  });
 }
 
 // ═══════════════════════════════════════════════════════
 //  UTILIDADES DE UI
 // ═══════════════════════════════════════════════════════
-
-// Banner de error no intrusivo
 function showLoadError(msg) {
   if (document.getElementById('ice-error-banner')) return;
   const b = document.createElement('div');
   b.id = 'ice-error-banner';
   b.style.cssText = [
-    'position:fixed', 'bottom:1rem', 'left:50%', 'transform:translateX(-50%)',
-    'background:#1a0000', 'border:1px solid #cc0000', 'color:#ff8080',
-    'font-size:.7rem', 'letter-spacing:.1em', 'padding:.55rem 1.2rem',
-    'border-radius:2px', 'z-index:99000', 'font-family:monospace',
-    'display:flex', 'align-items:center', 'gap:.75rem',
+    'position:fixed','bottom:1rem','left:50%','transform:translateX(-50%)',
+    'background:#1a0000','border:1px solid #cc0000','color:#ff8080',
+    'font-size:.7rem','letter-spacing:.1em','padding:.55rem 1.2rem',
+    'border-radius:2px','z-index:99000','font-family:monospace',
+    'display:flex','align-items:center','gap:.75rem',
     'box-shadow:0 4px 20px rgba(204,0,0,.25)',
   ].join(';');
   b.innerHTML = `⚠ ${msg} <button onclick="this.parentElement.remove()" style="background:none;border:none;color:#ff8080;cursor:pointer;font-size:1rem;line-height:1;padding:0">✕</button>`;
@@ -1348,25 +1201,17 @@ async function initSite() {
         portales:{ foto:'', cyber:'', code:'' }, equipo:[], contacto:[], cita:''
       };
     }
-    // Mostrar aviso no intrusivo — banner en la parte inferior
     showLoadError('No se pudieron cargar algunos datos. Comprueba tu conexión.');
   }
-  // Solo renderizar lo que depende de site.json (ya cargado)
   renderSite();
   renderPolaroids();
-  // fotos y blog se renderizan solos cuando sus JSONs llegan (ver loadAllData)
-  // Mostrar placeholders mientras cargan
   renderLandingStripPlaceholder();
-
-  // Router: leer URL actual y navegar al destino correcto
   handleInitialRoute();
 }
 
-// Placeholder del filmstrip mientras carga
 function renderLandingStripPlaceholder() {
   const wrap = document.getElementById('landing-photo-strip');
-  if (!wrap || state.fotos.length) return; // ya hay datos, no mostrar placeholder
-
+  if (!wrap || state.fotos.length) return;
   const holeCount = 20;
   function holesRow(n) {
     let h = '<div class="film-holes-row">';
@@ -1392,41 +1237,36 @@ function renderLandingStripPlaceholder() {
 
 function handleInitialRoute() {
   const path = window.location.pathname;
-
-  // Limpiar el parámetro ?p= que usa el 404.html redirect trick de GitHub Pages
-  const sp = new URLSearchParams(window.location.search);
+  const sp   = new URLSearchParams(window.location.search);
   const redirectPath = sp.get('p');
   if (redirectPath) {
-    // Limpiar la URL y usar el path real
     history.replaceState(null, '', redirectPath);
     handlePath(redirectPath);
     return;
   }
-
   handlePath(path);
 }
 
 function handlePath(path) {
-  // /blog/blog/nombre-articulo
+  // /blog/article/slug.html — página individual, nada que hacer en JS
+  if (path.match(/^\/blog\/article\/.+\.html$/)) return;
+
+  // /blog/blog/slug — deep link compartido, redirigir a la página individual
   const blogMatch = path.match(/^\/blog\/blog\/(.+)$/);
   if (blogMatch) {
     const slug = blogMatch[1];
-    const idx  = state.blog.findIndex(b => slugify(b.titulo) === slug);
-    // Quedarse en landing y abrir el modal del artículo
-    if (idx !== -1) {
-      history.replaceState({ section: 'landing', blogSlug: slug }, '', path);
-      openBlog(idx);
-    }
+    // Buscar en blog ya cargado, o construir URL directamente
+    const b   = state.blog.find(b => (b.slug || slugify(b.titulo)) === slug);
+    const url = b?.url || `/blog/article/${slug}.html`;
+    window.location.replace(url);
     return;
   }
 
   // Secciones principales
   const section = ROUTE_REVERSE[path];
   if (section && section !== 'landing') {
-    // Navegar sin transición para deep links
     goTo(section);
   } else {
-    // Landing por defecto — fijar URL canónica
     history.replaceState({ section: 'landing' }, '', '/blog/');
   }
 }
