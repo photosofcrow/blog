@@ -1,5 +1,12 @@
 [
     {
+        "cat": "Fotografía",
+        "fecha": "Jun 2025",
+        "minutos": 2,
+        "titulo": "Pruebesita",
+        "cuerpo": "<h2>Una prueba sin mas</h2>"
+    },
+    {
         "cat": "Código",
         "fecha": "PRU3ba",
         "minutos": 2,
