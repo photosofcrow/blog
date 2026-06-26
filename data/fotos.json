@@ -1,28 +1,48 @@
-{
-  "fotos": [
-    {
-      "nombre": "Ciervo en el alba",
-      "categoria": "Fauna",
-      "url": "https://raw.githubusercontent.com/photosofcrow/blog/refs/heads/main/fotos/montana.jpeg",
-      "emoji": "🦌",
-      "descripcion": "Ciervo macho al amanecer en el Pirineo aragonés.",
-      "temas_relacionados": ["fauna", "amanecer", "pirineos"]
-    },
-    {
-      "nombre": "Ciervo en el alba",
-      "categoria": "Fauna",
-      "url": "https://raw.githubusercontent.com/photosofcrow/blog/refs/heads/main/fotos/montana.jpeg",
-      "emoji": "🦌",
-      "descripcion": "Ciervo macho al amanecer en el Pirineo aragonés.",
-      "temas_relacionados": ["fauna", "amanecer", "pirineos"]
-    },
-    {
-      "nombre": "Ciervo en el alba",
-      "categoria": "Fauna",
-      "url": "https://raw.githubusercontent.com/photosofcrow/blog/refs/heads/main/fotos/montana.jpeg",
-      "emoji": "🦌",
-      "descripcion": "Ciervo macho al amanecer en el Pirineo aragonés.",
-      "temas_relacionados": ["fauna", "amanecer", "pirineos"]
-    }
-  ]
-}
+[
+  {
+    "nombre": "LOGO",
+    "categoria": "Otra",
+    "url": "https://raw.githubusercontent.com/photosofcrow/blog/refs/heads/main/fotos/logo.webp",
+    "emoji": "📷",
+    "descripcion": "logo iceSmoke",
+    "temas_relacionados": [
+      "brand"
+    ]
+  },
+  {
+    "nombre": "Ciervo en el alba",
+    "categoria": "Fauna",
+    "url": "https://raw.githubusercontent.com/photosofcrow/blog/refs/heads/main/fotos/montana.jpeg",
+    "emoji": "🦌",
+    "descripcion": "Ciervo macho al amanecer en el Pirineo aragonés.",
+    "temas_relacionados": [
+      "fauna",
+      "amanecer",
+      "pirineos"
+    ]
+  },
+  {
+    "nombre": "Ciervo en el alba",
+    "categoria": "Fauna",
+    "url": "https://raw.githubusercontent.com/photosofcrow/blog/refs/heads/main/fotos/montana.jpeg",
+    "emoji": "🦌",
+    "descripcion": "Ciervo macho al amanecer en el Pirineo aragonés.",
+    "temas_relacionados": [
+      "fauna",
+      "amanecer",
+      "pirineos"
+    ]
+  },
+  {
+    "nombre": "Ciervo en el alba",
+    "categoria": "Fauna",
+    "url": "https://raw.githubusercontent.com/photosofcrow/blog/refs/heads/main/fotos/montana.jpeg",
+    "emoji": "🦌",
+    "descripcion": "Ciervo macho al amanecer en el Pirineo aragonés.",
+    "temas_relacionados": [
+      "fauna",
+      "amanecer",
+      "pirineos"
+    ]
+  }
+]
